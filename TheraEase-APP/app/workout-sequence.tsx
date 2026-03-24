@@ -1,0 +1,754 @@
+// import React, { useState, useEffect } from 'react';
+// import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+// import { Text, ActivityIndicator } from 'react-native-paper';
+// import { useRouter, useLocalSearchParams } from 'expo-router';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { LinearGradient } from 'expo-linear-gradient';
+// import { ArrowLeft, Play, Pause, SkipForward, CheckCircle } from 'lucide-react-native';
+// import { Video, ResizeMode } from 'expo-av';
+// import { useAuthStore } from '@/stores/authStore';
+// import { api } from '@/services/api';
+// import { colors } from '@/utils/theme';
+// import Animated, { FadeInDown } from 'react-native-reanimated';
+// import * as Haptics from 'expo-haptics';
+// import * as ScreenOrientation from 'expo-screen-orientation';
+
+// const { width, height } = Dimensions.get('window');
+
+// interface Exercise {
+//   id: string;
+//   title: string;
+//   video_url: string;
+//   duration: number;
+//   thumbnail_url?: string;
+// }
+
+// export default function WorkoutSequenceScreen() {
+//   const router = useRouter();
+//   const params = useLocalSearchParams();
+//   const { user } = useAuthStore();
+  
+//   const [exercises, setExercises] = useState<Exercise[]>([]);
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [loading, setLoading] = useState(true);
+//   const [isPlaying, setIsPlaying] = useState(false);
+//   const [videoRef, setVideoRef] = useState<Video | null>(null);
+//   const [showControls, setShowControls] = useState(true);
+
+//   useEffect(() => {
+//     loadExercises();
+//     // Lock to landscape for better video experience
+//     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    
+//     return () => {
+//       ScreenOrientation.unlockAsync();
+//     };
+//   }, []);
+
+//   const loadExercises = async () => {
+//     if (!params.planId || !params.day) return;
+
+//     try {
+//       setLoading(true);
+      
+//       const response = await api.get(`/workout-plans/${params.planId}/exercises`);
+      
+//       // Filter exercises by day
+//       const dayNum = parseInt(params.day as string);
+//       const dayExercises = response.filter((item: any) => item.day_number === dayNum);
+//       const exerciseList = dayExercises.map((item: any) => item.exercise).filter(Boolean);
+
+//       setExercises(exerciseList);
+//     } catch (error) {
+//       console.error('Load exercises error:', error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handlePlayPause = async () => {
+//     if (!videoRef) return;
+
+//     if (isPlaying) {
+//       await videoRef.pauseAsync();
+//       setIsPlaying(false);
+//     } else {
+//       await videoRef.playAsync();
+//       setIsPlaying(true);
+//     }
+    
+//     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+//   };
+
+//   const handleNext = async () => {
+//     if (currentIndex < exercises.length - 1) {
+//       setCurrentIndex(currentIndex + 1);
+//       setIsPlaying(false);
+//       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+//     } else {
+//       // All exercises completed
+//       handleComplete();
+//     }
+//   };
+
+//   const handleComplete = async () => {
+//     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+//     // Save workout log for each exercise
+//     if (user && params.planId && params.day) {
+//       try {
+//         const completedAt = new Date().toISOString();
+//         const promises = exercises.map(ex => 
+//           api.post('/exercises/workout-log', {
+//             exercise_id: ex.id,
+//             plan_id: params.planId,
+//             day_number: parseInt(params.day as string),
+//             is_completed: true,
+//             completed_at: completedAt,
+//           })
+//         );
+//         await Promise.all(promises);
+//       } catch (error) {
+//         console.error('Save workout log error:', error);
+//       }
+//     }
+    
+//     router.back();
+//   };
+
+//   const handleVideoEnd = () => {
+//     // Auto-play next exercise after 2 seconds
+//     setTimeout(() => {
+//       handleNext();
+//     }, 2000);
+//   };
+
+//   const toggleControls = () => {
+//     setShowControls(!showControls);
+//     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+//   };
+
+//   if (loading) {
+//     return (
+//       <View style={styles.loadingContainer}>
+//         <ActivityIndicator size="large" color={colors.primary} />
+//       </View>
+//     );
+//   }
+
+//   if (exercises.length === 0) {
+//     return (
+//       <SafeAreaView style={styles.container}>
+//         <View style={styles.emptyContainer}>
+//           <Text style={styles.emptyText}>Không có bài tập nào</Text>
+//           <TouchableOpacity onPress={() => router.back()}>
+//             <Text style={styles.backText}>Quay lại</Text>
+//           </TouchableOpacity>
+//         </View>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   const currentExercise = exercises[currentIndex];
+
+//   return (
+//     <SafeAreaView style={styles.container} edges={[]}>
+//       <TouchableOpacity 
+//         style={styles.videoContainer}
+//         activeOpacity={1}
+//         onPress={toggleControls}
+//       >
+//         <Video
+//           ref={(ref) => setVideoRef(ref)}
+//           source={{ uri: currentExercise.video_url }}
+//           style={styles.video}
+//           resizeMode={ResizeMode.CONTAIN}
+//           shouldPlay={isPlaying}
+//           isLooping={false}
+//           onPlaybackStatusUpdate={(status: any) => {
+//             if (status.didJustFinish) {
+//               handleVideoEnd();
+//             }
+//           }}
+//         />
+
+//         {/* Controls Overlay */}
+//         {showControls && (
+//           <Animated.View entering={FadeInDown} style={styles.overlay}>
+//             {/* Header */}
+//             <LinearGradient
+//               colors={['rgba(0,0,0,0.8)', 'transparent']}
+//               style={styles.header}
+//             >
+//               <TouchableOpacity
+//                 style={styles.backButton}
+//                 onPress={() => router.back()}
+//               >
+//                 <ArrowLeft size={28} color="#FFF" />
+//               </TouchableOpacity>
+              
+//               <View style={styles.headerInfo}>
+//                 <Text style={styles.headerTitle}>{currentExercise.title}</Text>
+//                 <Text style={styles.headerSubtitle}>
+//                   Bài {currentIndex + 1}/{exercises.length}
+//                 </Text>
+//               </View>
+//             </LinearGradient>
+
+//             {/* Center Controls */}
+//             <View style={styles.centerControls}>
+//               <TouchableOpacity
+//                 style={styles.playButton}
+//                 onPress={handlePlayPause}
+//               >
+//                 {isPlaying ? (
+//                   <Pause size={48} color="#FFF" fill="#FFF" />
+//                 ) : (
+//                   <Play size={48} color="#FFF" fill="#FFF" />
+//                 )}
+//               </TouchableOpacity>
+//             </View>
+
+//             {/* Bottom Controls */}
+//             <LinearGradient
+//               colors={['transparent', 'rgba(0,0,0,0.8)']}
+//               style={styles.bottomControls}
+//             >
+//               <View style={styles.progressInfo}>
+//                 <Text style={styles.progressText}>
+//                   {currentIndex + 1} / {exercises.length} bài tập
+//                 </Text>
+//               </View>
+
+//               <TouchableOpacity
+//                 style={styles.nextButton}
+//                 onPress={handleNext}
+//               >
+//                 {currentIndex < exercises.length - 1 ? (
+//                   <>
+//                     <SkipForward size={24} color="#FFF" />
+//                     <Text style={styles.nextButtonText}>Tiếp theo</Text>
+//                   </>
+//                 ) : (
+//                   <>
+//                     <CheckCircle size={24} color="#FFF" />
+//                     <Text style={styles.nextButtonText}>Hoàn thành</Text>
+//                   </>
+//                 )}
+//               </TouchableOpacity>
+//             </LinearGradient>
+//           </Animated.View>
+//         )}
+//       </TouchableOpacity>
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#000',
+//   },
+//   loadingContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: '#000',
+//   },
+//   emptyContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   emptyText: {
+//     fontSize: 18,
+//     color: colors.text,
+//     marginBottom: 16,
+//   },
+//   backText: {
+//     fontSize: 16,
+//     color: colors.primary,
+//   },
+//   videoContainer: {
+//     flex: 1,
+//     backgroundColor: '#000',
+//   },
+//   video: {
+//     width: height, // Landscape: use height as width
+//     height: width, // Landscape: use width as height
+//   },
+//   overlay: {
+//     ...StyleSheet.absoluteFillObject,
+//     justifyContent: 'space-between',
+//   },
+//   header: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     padding: 20,
+//     paddingTop: 40,
+//   },
+//   backButton: {
+//     padding: 8,
+//     borderRadius: 8,
+//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//   },
+//   headerInfo: {
+//     flex: 1,
+//     marginLeft: 16,
+//   },
+//   headerTitle: {
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//     color: '#FFF',
+//     marginBottom: 4,
+//   },
+//   headerSubtitle: {
+//     fontSize: 14,
+//     color: 'rgba(255, 255, 255, 0.8)',
+//   },
+//   centerControls: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   playButton: {
+//     width: 80,
+//     height: 80,
+//     borderRadius: 40,
+//     backgroundColor: 'rgba(0, 0, 0, 0.6)',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     borderWidth: 3,
+//     borderColor: '#FFF',
+//   },
+//   bottomControls: {
+//     padding: 20,
+//     paddingBottom: 40,
+//   },
+//   progressInfo: {
+//     marginBottom: 16,
+//   },
+//   progressText: {
+//     fontSize: 16,
+//     color: '#FFF',
+//     textAlign: 'center',
+//     fontWeight: '600',
+//   },
+//   nextButton: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     backgroundColor: colors.primary,
+//     paddingVertical: 16,
+//     paddingHorizontal: 32,
+//     borderRadius: 28,
+//     gap: 8,
+//   },
+//   nextButtonText: {
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     color: '#FFF',
+//   },
+// });
+
+
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { Text, ActivityIndicator } from 'react-native-paper';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowLeft, Play, Pause, SkipForward, CheckCircle } from 'lucide-react-native';
+import { Video, ResizeMode } from 'expo-av';
+import YoutubePlayer from 'react-native-youtube-iframe';
+import { useAuthStore } from '@/stores/authStore';
+import { api } from '@/services/api';
+import { getVideoByPlanDay } from '@/services/videos';
+import { colors } from '@/utils/theme';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { extractYouTubeVideoId, isYouTubeUrl } from '@/utils/youtube';
+
+const { width, height } = Dimensions.get('window');
+
+interface Exercise {
+  id: string;
+  title: string;
+  video_url: string;
+  duration: number;
+  thumbnail_url?: string;
+}
+
+export default function WorkoutSequenceScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { user } = useAuthStore();
+  
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [videoRef, setVideoRef] = useState<Video | null>(null);
+  const [showControls, setShowControls] = useState(true);
+  const [dayVideoUrl, setDayVideoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadExercises();
+    // Lock to landscape for better video experience
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    
+    return () => {
+      ScreenOrientation.unlockAsync();
+    };
+  }, []);
+
+  const loadExercises = async () => {
+    if (!params.planId || !params.day) return;
+
+    try {
+      setLoading(true);
+      
+      const response = await api.get(`/workout-plans/${params.planId}/exercises`);
+      
+      // Filter exercises by day
+      const dayNum = parseInt(params.day as string);
+      const dayExercises = response.filter((item: any) => item.day_number === dayNum);
+      const exerciseList = dayExercises.map((item: any) => item.exercise).filter(Boolean);
+
+      setExercises(exerciseList);
+
+      // Resolve one video per day from backend videos collection
+      const { data: dayVideo, error: dayVideoError } = await getVideoByPlanDay(
+        params.planId as string,
+        dayNum
+      );
+      if (dayVideoError) {
+        console.log('Load day video error:', dayVideoError);
+      }
+      setDayVideoUrl(dayVideo?.link || null);
+    } catch (error) {
+      console.error('Load exercises error:', error);
+      setDayVideoUrl(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePlayPause = async () => {
+    if (isYoutubeVideo) {
+      setIsPlaying(prev => !prev);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      return;
+    }
+
+    if (!videoRef) return;
+
+    if (isPlaying) {
+      await videoRef.pauseAsync();
+      setIsPlaying(false);
+    } else {
+      await videoRef.playAsync();
+      setIsPlaying(true);
+    }
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleNext = async () => {
+    if (currentIndex < exercises.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setIsPlaying(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      // All exercises completed
+      handleComplete();
+    }
+  };
+
+  const handleComplete = async () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Save workout log for each exercise
+    if (user && params.planId && params.day) {
+      try {
+        const completedAt = new Date().toISOString();
+        const promises = exercises.map(ex => 
+          api.post('/exercises/workout-log', {
+            exercise_id: ex.id,
+            plan_id: params.planId,
+            day_number: parseInt(params.day as string),
+            is_completed: true,
+            completed_at: completedAt,
+          })
+        );
+        await Promise.all(promises);
+      } catch (error) {
+        console.error('Save workout log error:', error);
+      }
+    }
+    
+    router.back();
+  };
+
+  const handleVideoEnd = () => {
+    // Auto-play next exercise after 2 seconds
+    setTimeout(() => {
+      handleNext();
+    }, 2000);
+  };
+
+  const toggleControls = () => {
+    setShowControls(!showControls);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (exercises.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Không có bài tập nào</Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backText}>Quay lại</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const currentExercise = exercises[currentIndex];
+  const currentVideoUrl = dayVideoUrl || currentExercise.video_url;
+  const isYoutubeVideo = isYouTubeUrl(currentVideoUrl);
+  const youtubeVideoId = isYoutubeVideo ? extractYouTubeVideoId(currentVideoUrl) : null;
+
+  return (
+    <SafeAreaView style={styles.container} edges={[]}>
+      <TouchableOpacity 
+        style={styles.videoContainer}
+        activeOpacity={1}
+        onPress={toggleControls}
+      >
+        {isYoutubeVideo && youtubeVideoId ? (
+          <YoutubePlayer
+            height={width}
+            width={height}
+            play={isPlaying}
+            videoId={youtubeVideoId}
+            onChangeState={(state: string) => {
+              if (state === 'ended') {
+                handleVideoEnd();
+                setIsPlaying(false);
+              } else if (state === 'playing') {
+                setIsPlaying(true);
+              } else if (state === 'paused') {
+                setIsPlaying(false);
+              }
+            }}
+            initialPlayerParams={{
+              controls: false,
+              modestbranding: true,
+              rel: false,
+            }}
+          />
+        ) : (
+          <Video
+            ref={(ref) => setVideoRef(ref)}
+            source={{ uri: currentVideoUrl }}
+            style={styles.video}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay={isPlaying}
+            isLooping={false}
+            onPlaybackStatusUpdate={(status: any) => {
+              if (status.didJustFinish) {
+                handleVideoEnd();
+              }
+            }}
+          />
+        )}
+
+        {/* Controls Overlay */}
+        {showControls && (
+          <Animated.View entering={FadeInDown} style={styles.overlay}>
+            {/* Header */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.8)', 'transparent']}
+              style={styles.header}
+            >
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => router.back()}
+              >
+                <ArrowLeft size={28} color="#FFF" />
+              </TouchableOpacity>
+              
+              <View style={styles.headerInfo}>
+                <Text style={styles.headerTitle}>{currentExercise.title}</Text>
+                <Text style={styles.headerSubtitle}>
+                  Bài {currentIndex + 1}/{exercises.length}
+                </Text>
+              </View>
+            </LinearGradient>
+
+            {/* Center Controls */}
+            <View style={styles.centerControls}>
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={handlePlayPause}
+              >
+                {isPlaying ? (
+                  <Pause size={48} color="#FFF" fill="#FFF" />
+                ) : (
+                  <Play size={48} color="#FFF" fill="#FFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Bottom Controls */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.8)']}
+              style={styles.bottomControls}
+            >
+              <View style={styles.progressInfo}>
+                <Text style={styles.progressText}>
+                  {currentIndex + 1} / {exercises.length} bài tập
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.nextButton}
+                onPress={handleNext}
+              >
+                {currentIndex < exercises.length - 1 ? (
+                  <>
+                    <SkipForward size={24} color="#FFF" />
+                    <Text style={styles.nextButtonText}>Tiếp theo</Text>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={24} color="#FFF" />
+                    <Text style={styles.nextButtonText}>Hoàn thành</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </LinearGradient>
+          </Animated.View>
+        )}
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 16,
+    color: colors.primary,
+  },
+  videoContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  video: {
+    width: height, // Landscape: use height as width
+    height: width, // Landscape: use width as height
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 40,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  headerInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  centerControls: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFF',
+  },
+  bottomControls: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  progressInfo: {
+    marginBottom: 16,
+  },
+  progressText: {
+    fontSize: 16,
+    color: '#FFF',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+    gap: 8,
+  },
+  nextButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+});

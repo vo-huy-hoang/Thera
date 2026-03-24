@@ -1,0 +1,55 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const connectDB = require('./config/db');
+
+// Connect to MongoDB
+connectDB();
+
+const app = express();
+app.set('etag', false);
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(morgan('dev'));
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/exercises', require('./routes/exercises'));
+app.use('/api/workout-plans', require('./routes/workoutPlans'));
+app.use('/api/pain-logs', require('./routes/painLogs'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/ai-prompts', require('./routes/aiPrompts'));
+app.use('/api/knowledge', require('./routes/knowledge'));
+app.use('/api/postures', require('./routes/postures'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/product-assessments', require('./routes/productAssessments'));
+app.use('/api/codes', require('./routes/codes'));
+app.use('/api/water', require('./routes/water'));
+app.use('/api/motivations', require('./routes/motivations'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/videos', require('./routes/videos'));
+app.use('/api', require('./routes/misc'));
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: err.message || 'Lỗi server' });
+});
+
+const PORT = process.env.PORT || 5001;
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`TheraEase Backend running on port ${PORT}`);
+  });
+}
+
+// Export for Vercel Serverless Function
+module.exports = app;
