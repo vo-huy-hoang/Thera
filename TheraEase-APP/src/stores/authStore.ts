@@ -23,6 +23,7 @@ interface User {
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
+  onboarding_completed: boolean;
   owned_devices: string[];
   created_at: string;
 }

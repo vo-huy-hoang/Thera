@@ -17,6 +17,7 @@ type OnboardingProfileUpdates = Partial<{
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
+  onboarding_completed: boolean;
   owned_devices: string[];
 }>;
 
@@ -49,6 +50,7 @@ export async function persistOnboardingProfile() {
     symptoms: user.symptoms || [],
     surgery_history: user.surgery_history || '',
     preferred_time: user.preferred_time || '20:00',
+    onboarding_completed: true,
     owned_devices: user.owned_devices || [],
   };
 

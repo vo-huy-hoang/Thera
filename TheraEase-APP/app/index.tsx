@@ -14,7 +14,11 @@ export default function Index() {
       // Add small delay to ensure layout is mounted
       setTimeout(() => {
         if (user) {
-          router.replace('/(tabs)/home');
+          if (user.onboarding_completed) {
+            router.replace('/(tabs)/home');
+          } else {
+            router.replace('/(auth)/welcome');
+          }
         } else {
           router.replace('/(auth)/login');
         }

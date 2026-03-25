@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "seed": "node scripts/seedData.js"
+    "seed": "node scripts/seedData.js",
+    "migrate:onboarding": "node scripts/migrateOnboardingCompleted.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

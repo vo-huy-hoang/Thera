@@ -15,6 +15,7 @@ export interface User {
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
+  onboarding_completed: boolean;
   is_pro: boolean;
   created_at: string;
 }

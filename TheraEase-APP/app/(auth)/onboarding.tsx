@@ -26,6 +26,7 @@ import {
   ArrowLeft
 } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
+import { updateProfile } from '@/services/auth';
 import { colors } from '@/utils/theme';
 import { SYMPTOMS, SURGERY_HISTORY } from '@/utils/constants';
 import Animated, { 
@@ -69,7 +70,7 @@ export default function OnboardingScreen() {
       console.log('Onboarding: Checking existing profile...');
       
       // Check từ local store trước (nhanh nhất)
-      if (user && user.full_name && user.full_name.trim() !== '') {
+      if (user?.onboarding_completed) {
         console.log('Onboarding: Profile exists in local store, redirecting to home');
         router.replace('/(tabs)/home');
         return;
@@ -174,6 +175,7 @@ export default function OnboardingScreen() {
         symptoms,
         surgery_history: surgeryHistory,
         preferred_time: formatTime(),
+        onboarding_completed: true,
         is_pro: false,
       };
 
@@ -199,8 +201,9 @@ export default function OnboardingScreen() {
       console.log('Onboarding: Saved to local store with ID:', userProfile.id);
       console.log('Onboarding: Saved email:', userProfile.email);
 
-      // Database save sẽ được xử lý sau khi vào home (background)
-      // Không chờ ở đây để tránh timeout
+      if (user?.id && user.id !== 'guest') {
+        await updateProfile(profileData);
+      }
       
       showToast('Đã lưu hồ sơ!', 'success');
       console.log('Onboarding: Navigating to home...');

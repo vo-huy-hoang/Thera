@@ -156,7 +156,11 @@ export default function LoginScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setAuthMessage('Đăng nhập thành công!');
-      router.replace('/(auth)/welcome');
+      if (data.user.onboarding_completed) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(auth)/welcome');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
