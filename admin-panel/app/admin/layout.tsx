@@ -19,7 +19,8 @@ import {
   Film,
   LogOut,
   Menu,
-  X
+  X,
+  QrCode
 } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -35,6 +36,7 @@ const menuItems = [
   { icon: MessageSquare, label: 'Motivation', href: '/admin/motivations' },
   { icon: Film, label: 'Videos', href: '/admin/videos' },
   { icon: Key, label: 'Activation Codes', href: '/admin/codes' },
+  { icon: QrCode, label: 'Mã Sản Phẩm', href: '/admin/product-instances' },
 ];
 
 export default function AdminLayout({

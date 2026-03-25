@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ActivationCode = require('../models/ActivationCode');
+const ProductInstance = require('../models/ProductInstance');
 const User = require('../models/User');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -48,21 +49,31 @@ router.post('/activate', protect, async (req, res) => {
   try {
     const { code } = req.body;
     
-    const activationCode = await ActivationCode.findOne({ code, is_used: false });
-    if (!activationCode) {
+    // Check product instance code
+    const productInstance = await ProductInstance.findOne({ activation_code: code, is_activated: false }).populate('product_id');
+    if (!productInstance) {
       return res.status(400).json({ error: 'Mã không hợp lệ hoặc đã được sử dụng' });
     }
 
-    activationCode.is_used = true;
-    activationCode.used_by = req.user._id;
-    activationCode.used_at = new Date();
-    await activationCode.save();
+    productInstance.is_activated = true;
+    productInstance.activated_by = req.user._id;
+    productInstance.activated_at = new Date();
+    await productInstance.save();
 
-    // Upgrade user to PRO
-    await User.findByIdAndUpdate(req.user._id, { is_pro: true });
+    // Add product key to owned_devices if Product exists
+    const productKey = productInstance.product_id?.key;
+    if (productKey) {
+      await User.findByIdAndUpdate(req.user._id, { 
+        $addToSet: { owned_devices: productKey },
+        is_pro: true 
+      });
+    } else {
+      await User.findByIdAndUpdate(req.user._id, { is_pro: true });
+    }
 
-    res.json({ message: 'Kích hoạt thành công', is_pro: true });
+    res.json({ message: 'Kích hoạt thành công', is_pro: true, device: productKey });
   } catch (error) {
+    console.error('Activation Error:', error);
     res.status(500).json({ error: 'Lỗi server' });
   }
 });
