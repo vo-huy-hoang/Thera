@@ -48,10 +48,12 @@ export default function ProfileScreen() {
 
       const response = await api.post('/codes/activate', { code: activationCode.trim() });
       
-      // Update user to PRO locally
-      const updatedUser = { ...user, is_pro: true };
-
-      setUser(updatedUser);
+      if (response?.user) {
+        setUser(response.user);
+      } else {
+        const updatedUser = { ...user, is_pro: true };
+        setUser(updatedUser);
+      }
       setQrDialogVisible(false);
       setActivationCode('');
 
@@ -60,8 +62,8 @@ export default function ProfileScreen() {
         'Bạn đã là thành viên PRO. Tận hưởng tất cả tính năng cao cấp!'
       );
     } catch (error: any) {
-      console.error('Activate code error:', error);
-      Alert.alert('Lỗi', error.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+      console.warn('Activate code error:', error?.message || error);
+      Alert.alert('Lỗi', error?.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }

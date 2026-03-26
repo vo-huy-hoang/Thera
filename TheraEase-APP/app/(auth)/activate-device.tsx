@@ -9,11 +9,12 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import { Text, Button } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 import { MotiView } from "moti";
+import { ArrowLeft } from "lucide-react-native";
 import { useAuthStore } from "@/stores/authStore";
 import { persistOnboardingProfile } from "@/services/onboardingProfile";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -23,7 +24,8 @@ const { width } = Dimensions.get("window");
 
 export default function ActivateDeviceScreen() {
 	const router = useRouter();
-	const { user } = useAuthStore();
+	const insets = useSafeAreaInsets();
+	const { user, setUser } = useAuthStore();
 	const [permission, requestPermission] = useCameraPermissions();
 
 	const [isManual, setIsManual] = useState(false);
@@ -41,20 +43,22 @@ export default function ActivateDeviceScreen() {
 		if (!codeStr) return;
 		setLoading(true);
 		try {
-			// call api
-			await api.post("/codes/activate", { code: codeStr });
+			const response = await api.post("/codes/activate", { code: codeStr });
 
-			// on success
-			if (user) {
+			if (response?.user) {
+				setUser(response.user);
+			}
+
+			if (user || response?.user) {
 				await persistOnboardingProfile();
 			}
 			router.replace("/(tabs)/home");
 			Alert.alert("Thành công", "Kích hoạt thiết bị thành công!");
 		} catch (error: any) {
-			console.error("Activate error:", error);
+			console.warn("Activate error:", error?.message || error);
 			Alert.alert(
 				"Lỗi",
-				error.response?.data?.error || "Mã không hợp lệ hoặc đã được sử dụng.",
+				error?.message || "Mã không hợp lệ hoặc đã được sử dụng.",
 			);
 		} finally {
 			setLoading(false);
@@ -131,6 +135,13 @@ export default function ActivateDeviceScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
+			<TouchableOpacity
+				onPress={() => router.back()}
+				style={[styles.backButtonTop, { top: insets.top + 8 }]}
+				activeOpacity={0.8}
+			>
+				<ArrowLeft size={24} color="#1E293B" />
+			</TouchableOpacity>
 			<View style={styles.content}>
 				<Animated.View
 					entering={FadeInUp.duration(600).springify()}
@@ -219,6 +230,24 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#FFFFFF",
+	},
+	backButtonTop: {
+		position: "absolute",
+		left: 20,
+		zIndex: 10,
+		width: 44,
+		height: 44,
+		borderRadius: 22,
+		backgroundColor: "#FFFFFF",
+		borderWidth: 1,
+		borderColor: "#E2E8F0",
+		alignItems: "center",
+		justifyContent: "center",
+		shadowColor: "#0F172A",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.08,
+		shadowRadius: 10,
+		elevation: 3,
 	},
 	content: {
 		flex: 1,

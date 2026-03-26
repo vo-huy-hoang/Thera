@@ -17,7 +17,15 @@ type OnboardingProfileUpdates = Partial<{
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
-  owned_devices: string[];
+  onboarding_completed: boolean;
+  owned_devices: Array<
+    | string
+    | {
+        key?: string;
+        name?: string;
+        activation_code?: string;
+      }
+  >;
 }>;
 
 export function mergeOnboardingUser(updates: OnboardingProfileUpdates) {
@@ -49,6 +57,7 @@ export async function persistOnboardingProfile() {
     symptoms: user.symptoms || [],
     surgery_history: user.surgery_history || '',
     preferred_time: user.preferred_time || '20:00',
+    onboarding_completed: true,
     owned_devices: user.owned_devices || [],
   };
 

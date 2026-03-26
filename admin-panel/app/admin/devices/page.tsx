@@ -11,8 +11,10 @@ interface User {
   id: string;
   full_name: string;
   email: string;
-  owned_devices: string[];
+  owned_devices: Array<string | { key?: string; name?: string; activation_code?: string }>;
 }
+
+type OwnedDeviceValue = string | { key?: string; name?: string; activation_code?: string };
 
 const DEVICES = [
   { id: 'neck_device', name: 'Thiết bị trị liệu cổ' },
@@ -22,13 +24,37 @@ const DEVICES = [
   { id: 'leg_device', name: 'Thiết bị trị liệu chân' },
 ];
 
+function getDeviceLabel(item: string | { key?: string; name?: string; activation_code?: string }) {
+  if (typeof item === 'string') {
+    return DEVICES.find((device) => device.id === item)?.name || item;
+  }
+
+  return item.name || item.key || item.activation_code || 'Thiết bị';
+}
+
+function mapToDeviceId(item: OwnedDeviceValue) {
+  if (typeof item === 'string') {
+    return item;
+  }
+
+  const key = item.key?.toLowerCase();
+  if (key === 'ech') return 'neck_device';
+  if (key === 'rung') return 'back_device';
+
+  const name = (item.name || '').toLowerCase();
+  if (name.includes('ech') || name.includes('co') || name.includes('neck')) return 'neck_device';
+  if (name.includes('rung') || name.includes('lung') || name.includes('back')) return 'back_device';
+
+  return '';
+}
+
 export default function DevicesPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [selectedDevices, setSelectedDevices] = useState<OwnedDeviceValue[]>([]);
 
   useEffect(() => {
     loadUsers();
@@ -72,8 +98,10 @@ export default function DevicesPage() {
   };
 
   const toggleDevice = (deviceId: string) => {
-    if (selectedDevices.includes(deviceId)) {
-      setSelectedDevices(selectedDevices.filter(d => d !== deviceId));
+    const selectedIds = selectedDevices.map(mapToDeviceId);
+
+    if (selectedIds.includes(deviceId)) {
+      setSelectedDevices(selectedDevices.filter((device) => mapToDeviceId(device) !== deviceId));
     } else {
       setSelectedDevices([...selectedDevices, deviceId]);
     }
@@ -131,11 +159,10 @@ export default function DevicesPage() {
                 <td>
                   <div className="flex flex-wrap gap-1">
                     {(user.owned_devices || []).length > 0 ? (
-                      user.owned_devices.map(deviceId => {
-                        const device = DEVICES.find(d => d.id === deviceId);
+                      user.owned_devices.map((device, index) => {
                         return (
-                          <span key={deviceId} className="badge badge-success text-xs">
-                            {device?.name || deviceId}
+                          <span key={`${user.id}-${index}`} className="badge badge-success text-xs">
+                            {getDeviceLabel(device)}
                           </span>
                         );
                       })
@@ -180,7 +207,7 @@ export default function DevicesPage() {
                 <label key={device.id} className="flex items-center gap-3 p-3 border border-slate-200 hover:bg-slate-50 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedDevices.includes(device.id)}
+                    checked={selectedDevices.map(mapToDeviceId).includes(device.id)}
                     onChange={() => toggleDevice(device.id)}
                     className="w-4 h-4"
                   />

@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   // Access control
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   is_pro: { type: Boolean, default: false },
-  owned_devices: [{ type: String }],
+  owned_devices: [{ type: mongoose.Schema.Types.Mixed }],
   
   // Admin auth (password only for admin)
   password: { type: String, select: false },

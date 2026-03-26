@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sparkles } from 'lucide-react-native';
@@ -49,8 +49,23 @@ export default function ExploreScreen() {
                 Thiết bị hỗ trợ trị liệu vùng cổ vai gáy, phù hợp cho người ngồi nhiều và hay
                 mỏi cổ.
               </Text>
-              <View style={styles.metaRow}>
-                <Text style={styles.statusPill}>Đang hiển thị cố định</Text>
+              <View style={styles.actionRow}>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/(auth)/activate-device');
+                  }}
+                >
+                  <Text style={styles.actionPill}>Thêm</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/(auth)/special-offer');
+                  }}
+                >
+                  <Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -69,8 +84,23 @@ export default function ExploreScreen() {
                 Thiết bị hỗ trợ thư giãn và giảm căng cứng vùng lưng, phù hợp cho nhu cầu phục
                 hồi cơ sâu.
               </Text>
-              <View style={styles.metaRow}>
-                <Text style={styles.statusPill}>Sẵn sàng gắn ảnh cứng</Text>
+              <View style={styles.actionRow}>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/(auth)/activate-device');
+                  }}
+                >
+                  <Text style={styles.actionPill}>Thêm</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/(auth)/special-offer');
+                  }}
+                >
+                  <Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+                </Pressable>
               </View>
             </View>
           </View>
@@ -204,12 +234,40 @@ const createStyles = (colors: any, isDark: boolean, topInset: number) =>
       flexDirection: 'row',
       alignItems: 'center',
     },
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flexWrap: 'wrap',
+    },
     statusPill: {
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderRadius: 999,
       backgroundColor: `${colors.primary}14`,
       color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+      overflow: 'hidden',
+    },
+    actionPill: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '700',
+      overflow: 'hidden',
+    },
+    actionPillPrimary: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: colors.primary,
+      color: '#FFFFFF',
       fontSize: 13,
       fontWeight: '700',
       overflow: 'hidden',

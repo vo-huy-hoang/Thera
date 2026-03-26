@@ -96,6 +96,7 @@ function TypewriterText() {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('Đang kết nối với Google...');
 
@@ -107,6 +108,17 @@ export default function LoginScreen() {
       ? { redirectUri: `${process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME}:/oauthredirect` }
       : {}),
   });
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (user.onboarding_completed) {
+      router.replace('/(tabs)/home');
+      return;
+    }
+
+    router.replace('/(auth)/welcome');
+  }, [user, router]);
 
   useEffect(() => {
     if (!response) return;
@@ -156,7 +168,11 @@ export default function LoginScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setAuthMessage('Đăng nhập thành công!');
-      router.replace('/(auth)/welcome');
+      if (data.user.onboarding_completed) {
+        router.replace('/(tabs)/home');
+      } else {
+        router.replace('/(auth)/welcome');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

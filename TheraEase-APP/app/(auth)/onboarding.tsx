@@ -190,6 +190,7 @@ export default function OnboardingScreen() {
         email: email || '',
         avatar_url: user?.avatar_url || '',
         role: user?.role || 'user',
+        onboarding_completed: true,
         owned_devices: user?.owned_devices || [],
         ...profileData,
         created_at: new Date().toISOString(),

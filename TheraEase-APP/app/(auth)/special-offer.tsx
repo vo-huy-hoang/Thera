@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, ImageBackground, TouchableOpacity, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowLeft } from 'lucide-react-native';
 
 import { useAuthStore } from '@/stores/authStore';
 import { persistOnboardingProfile } from '@/services/onboardingProfile';
@@ -14,6 +15,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function SpecialOfferScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
 
   const handleNext = async () => {
@@ -40,6 +42,13 @@ export default function SpecialOfferScreen() {
         blurRadius={10}
       >
         <SafeAreaView style={styles.overlay}>
+           <TouchableOpacity
+             onPress={() => router.back()}
+             style={[styles.backButtonTop, { top: insets.top + 8 }]}
+             activeOpacity={0.8}
+           >
+             <ArrowLeft size={24} color="#1E293B" />
+           </TouchableOpacity>
            <Animated.View entering={ZoomIn.duration(800)} style={styles.offerCard}>
               
               <View style={styles.tagContainer}>
@@ -101,6 +110,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  backButtonTop: {
+    position: 'absolute',
+    left: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   offerCard: {
     backgroundColor: '#FFFFFF',

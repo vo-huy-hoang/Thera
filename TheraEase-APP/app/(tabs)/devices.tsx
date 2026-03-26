@@ -10,6 +10,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/services/api';
 import { colors } from '@/utils/theme';
+import { getOwnedDeviceIds, type OwnedDeviceEntry } from '@/utils/ownedDevices';
 
 interface Device {
   id: string;
@@ -60,7 +61,7 @@ const DEVICES: Device[] = [
 export default function DevicesScreen() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [ownedDevices, setOwnedDevices] = useState<string[]>([]);
+  const [ownedDevices, setOwnedDevices] = useState<OwnedDeviceEntry[]>([]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [activationKey, setActivationKey] = useState('');
@@ -88,7 +89,8 @@ export default function DevicesScreen() {
   const handleDevicePress = (device: Device) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    const isOwned = ownedDevices.includes(device.id);
+    const ownedDeviceIds = getOwnedDeviceIds(ownedDevices);
+    const isOwned = ownedDeviceIds.includes(device.id);
 
     if (isOwned) {
       // Đã có → Hiển thị QR/Key
@@ -142,7 +144,10 @@ export default function DevicesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const newDevices = ownedDevices.filter(d => d !== deviceId);
+              const newDevices = ownedDevices.filter((d) => {
+                if (typeof d === 'string') return d !== deviceId;
+                return getOwnedDeviceIds([d])[0] !== deviceId;
+              });
               
               await api.put('/auth/profile', { owned_devices: newDevices });
 
@@ -191,7 +196,7 @@ export default function DevicesScreen() {
         <Text style={styles.sectionTitle}>Danh sách thiết bị</Text>
 
         {DEVICES.map((device, index) => {
-          const isOwned = ownedDevices.includes(device.id);
+          const isOwned = getOwnedDeviceIds(ownedDevices).includes(device.id);
           const DeviceIcon = device.Icon;
 
           return (

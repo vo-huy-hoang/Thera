@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { initAuth, signOut as authSignOut, getProfile } from '../services/auth';
 
+export interface OwnedDevice {
+  key?: string;
+  name?: string;
+  activation_code?: string;
+}
+
 interface User {
   id: string;
   email: string;
@@ -23,7 +29,8 @@ interface User {
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
-  owned_devices: string[];
+  onboarding_completed: boolean;
+  owned_devices: Array<string | OwnedDevice>;
   created_at: string;
 }
 

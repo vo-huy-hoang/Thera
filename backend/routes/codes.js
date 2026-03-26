@@ -44,34 +44,54 @@ router.post('/generate', protect, adminOnly, async (req, res) => {
   }
 });
 
-// POST /api/codes/activate - Activate a code (mobile app)
+// POST /api/codes/activate - Verify an activated product instance and attach it to user
 router.post('/activate', protect, async (req, res) => {
   try {
-    const { code } = req.body;
+    const code = typeof req.body.code === 'string' ? req.body.code.trim().toUpperCase() : '';
+    if (!code) {
+      return res.status(400).json({ error: 'Thiếu mã kích hoạt' });
+    }
     
-    // Check product instance code
-    const productInstance = await ProductInstance.findOne({ activation_code: code, is_activated: false }).populate('product_id');
+    const productInstance = await ProductInstance.findOne({
+      activation_code: code,
+      is_activated: true,
+    }).populate('product_id');
+
     if (!productInstance) {
-      return res.status(400).json({ error: 'Mã không hợp lệ hoặc đã được sử dụng' });
+      return res.status(400).json({ error: 'Mã không hợp lệ hoặc chưa được kích hoạt' });
     }
 
-    productInstance.is_activated = true;
-    productInstance.activated_by = req.user._id;
-    productInstance.activated_at = new Date();
-    await productInstance.save();
+    const product = productInstance.product_id;
+    const deviceEntry = {
+      key: product?.key || '',
+      name: product?.name || '',
+      activation_code: productInstance.activation_code,
+    };
 
-    // Add product key to owned_devices if Product exists
-    const productKey = productInstance.product_id?.key;
-    if (productKey) {
-      await User.findByIdAndUpdate(req.user._id, { 
-        $addToSet: { owned_devices: productKey },
-        is_pro: true 
-      });
-    } else {
-      await User.findByIdAndUpdate(req.user._id, { is_pro: true });
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy user' });
     }
 
-    res.json({ message: 'Kích hoạt thành công', is_pro: true, device: productKey });
+    const currentDevices = Array.isArray(user.owned_devices) ? user.owned_devices : [];
+    const filteredDevices = currentDevices.filter((item) => {
+      if (typeof item === 'string') {
+        return item !== deviceEntry.key && item !== deviceEntry.name;
+      }
+      return item?.activation_code !== deviceEntry.activation_code;
+    });
+
+    user.owned_devices = [...filteredDevices, deviceEntry];
+    user.is_pro = true;
+    user.updated_at = new Date();
+    await user.save();
+
+    res.json({
+      message: 'Đã thêm thiết bị thành công',
+      is_pro: true,
+      device: deviceEntry,
+      user,
+    });
   } catch (error) {
     console.error('Activation Error:', error);
     res.status(500).json({ error: 'Lỗi server' });

@@ -1,3 +1,9 @@
+export interface OwnedDevice {
+  key?: string;
+  name?: string;
+  activation_code?: string;
+}
+
 export interface User {
   id: string;
   full_name: string;
@@ -15,6 +21,8 @@ export interface User {
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
+  onboarding_completed: boolean;
+  owned_devices: Array<string | OwnedDevice>;
   is_pro: boolean;
   created_at: string;
 }

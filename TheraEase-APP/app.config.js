@@ -42,9 +42,9 @@ export default {
         }
       ],
       [
-        "expo-barcode-scanner",
+        "expo-camera",
         {
-          cameraPermission: "Allow app to access camera for QR code scanning"
+          cameraPermission: "Ứng dụng cần quyền camera để quét mã QR kích hoạt thiết bị"
         }
       ]
     ],

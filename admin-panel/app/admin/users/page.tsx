@@ -13,7 +13,7 @@ interface User {
   age: number;
   is_pro: boolean;
   created_at: string;
-  owned_devices: string[];
+  owned_devices: Array<string | { key?: string; name?: string; activation_code?: string }>;
 }
 
 export default function UsersPage() {

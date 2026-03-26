@@ -26,6 +26,7 @@ import { getUserBehavior } from '@/services/exercises';
 import { getHealthTips, getNutritionTips } from '@/services/dailyContent';
 import { getTodayWater, incrementWater } from '@/services/water';
 import { api } from '@/services/api';
+import { getOwnedDeviceIds } from '@/utils/ownedDevices';
 import PainChart from '@/components/PainChart';
 import WaterTrackerCard from '@/components/WaterTrackerCard';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -355,7 +356,7 @@ export default function HomeScreen() {
       // Lấy owned_devices từ profile
       const profile = await api.get('/auth/me');
       
-      const ownedDevices = profile?.owned_devices || [];
+      const ownedDevices = getOwnedDeviceIds(profile?.owned_devices || []);
       const painAreas = profile?.pain_areas || [];
       
       // Phân tích vùng đau từ pain logs
