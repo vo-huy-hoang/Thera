@@ -1,114 +1,114 @@
-import { create } from 'zustand';
-import { api } from '../services/api';
-import { initAuth, signOut as authSignOut, getProfile } from '../services/auth';
+import { create } from "zustand";
+import { api } from "../services/api";
+import { initAuth, signOut as authSignOut, getProfile } from "../services/auth";
 
 export interface OwnedDevice {
-  key?: string;
-  name?: string;
-  activation_code?: string;
+	key?: string;
+	name?: string;
+	activation_code?: string;
 }
 
 interface User {
-  id: string;
-  email: string;
-  full_name: string;
-  avatar_url: string;
-  role: string;
-  is_pro: boolean;
-  age: number;
-  occupation: string;
-  gender: string;
-  height: string;
-  weight: string;
-  target_weight: string;
-  primary_goal: string;
-  focus_area: string;
-  limitations: string;
-  diet_type: string;
-  pain_areas: string[];
-  symptoms: string[];
-  surgery_history: string;
-  preferred_time: string;
-  onboarding_completed: boolean;
-  owned_devices: Array<string | OwnedDevice>;
-  created_at: string;
+	id: string;
+	email: string;
+	full_name: string;
+	avatar_url: string;
+	role: string;
+	is_pro: boolean;
+	age: number;
+	occupation: string;
+	gender: string;
+	height: string;
+	weight: string;
+	target_weight: string;
+	primary_goal: string;
+	focus_area: string;
+	limitations: string;
+	diet_type: string;
+	pain_areas: string[];
+	symptoms: string[];
+	surgery_history: string;
+	preferred_time: string;
+	onboarding_completed: boolean;
+	owned_devices: Array<string | OwnedDevice>;
+	created_at: string;
 }
 
 interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  initialize: () => Promise<void>;
-  setUser: (user: User | null) => void;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+	user: User | null;
+	token: string | null;
+	isLoading: boolean;
+	isAuthenticated: boolean;
+	initialize: () => Promise<void>;
+	setUser: (user: User | null) => void;
+	signOut: () => Promise<void>;
+	refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: null,
-  isLoading: true,
-  isAuthenticated: false,
+	user: null,
+	token: null,
+	isLoading: true,
+	isAuthenticated: false,
 
-  initialize: async () => {
-    try {
-      set({ isLoading: true });
-      const user = await initAuth();
-      
-      if (user) {
-        const token = await api.getToken();
-        set({
-          user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
-    } catch (error) {
-      console.error('Auth init error:', error);
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-    }
-  },
+	initialize: async () => {
+		try {
+			set({ isLoading: true });
+			const user = await initAuth();
 
-  setUser: (user) => {
-    void api.setUser(user);
-    set({
-      user,
-      isAuthenticated: !!user,
-    });
-  },
+			if (user) {
+				const token = await api.getToken();
+				set({
+					user,
+					token,
+					isAuthenticated: true,
+					isLoading: false,
+				});
+			} else {
+				set({
+					user: null,
+					token: null,
+					isAuthenticated: false,
+					isLoading: false,
+				});
+			}
+		} catch (error) {
+			console.error("Auth init error:", error);
+			set({
+				user: null,
+				token: null,
+				isAuthenticated: false,
+				isLoading: false,
+			});
+		}
+	},
 
-  signOut: async () => {
-    await authSignOut();
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-    });
-  },
+	setUser: (user) => {
+		void api.setUser(user);
+		set({
+			user,
+			isAuthenticated: !!user,
+		});
+	},
 
-  refreshProfile: async () => {
-    try {
-      const user = await getProfile();
-      if (user) {
-        await api.setUser(user);
-        set({ user });
-      }
-    } catch (error) {
-      console.error('Refresh profile error:', error);
-    }
-  },
+	signOut: async () => {
+		await authSignOut();
+		set({
+			user: null,
+			token: null,
+			isAuthenticated: false,
+		});
+	},
+
+	refreshProfile: async () => {
+		try {
+			const user = await getProfile();
+			if (user) {
+				await api.setUser(user);
+				set({ user });
+			}
+		} catch (error) {
+			console.error("Refresh profile error:", error);
+		}
+	},
 }));

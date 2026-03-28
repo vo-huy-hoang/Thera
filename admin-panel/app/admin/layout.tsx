@@ -103,7 +103,7 @@ export default function AdminLayout({
 						<div className="flex items-center">
 							<Image
 								src="/logo.png"
-								alt="TheraEase"
+								alt="TheraHOME"
 								width={80}
 								height={80}
 								className="object-contain"
