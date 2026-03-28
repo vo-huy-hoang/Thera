@@ -89,6 +89,10 @@ export default function WaterTrackerCard({
           <Plus size={18} color="#FFFFFF" strokeWidth={2.6} />
         </TouchableOpacity>
       </View>
+
+      <View style={styles.noteContainer}>
+        <Text style={styles.noteText}>* Đừng quên nước rất tốt cho đĩa đệm</Text>
+      </View>
     </View>
   );
 }
@@ -169,5 +173,14 @@ const createStyles = (colors: any, isDark: boolean) =>
       lineHeight: 36,
       color: isDark ? '#94A3B8' : '#4B5563',
       fontWeight: '400',
+    },
+    noteContainer: {
+      marginTop: 16,
+      alignItems: 'center',
+    },
+    noteText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
     },
   });
