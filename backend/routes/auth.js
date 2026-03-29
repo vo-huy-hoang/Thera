@@ -129,6 +129,8 @@ router.post('/google', async (req, res) => {
         symptoms: user.symptoms,
         surgery_history: user.surgery_history,
         preferred_time: user.preferred_time,
+        personalized_plan_started_at: user.personalized_plan_started_at,
+        personalized_plan_unlock_at: user.personalized_plan_unlock_at,
         onboarding_completed: user.onboarding_completed,
         owned_devices: user.owned_devices,
         created_at: user.created_at,
@@ -158,7 +160,8 @@ router.put('/profile', protect, async (req, res) => {
       'full_name', 'age', 'occupation', 'gender', 'height', 'weight',
       'target_weight', 'primary_goal', 'focus_area', 'limitations',
       'diet_type', 'pain_areas', 'symptoms', 'surgery_history',
-      'preferred_time', 'avatar_url', 'owned_devices', 'onboarding_completed'
+      'preferred_time', 'avatar_url', 'owned_devices', 'onboarding_completed',
+      'personalized_plan_started_at', 'personalized_plan_unlock_at'
     ];
 
     const updates = {};

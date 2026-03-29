@@ -55,16 +55,18 @@ export default function ExploreScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     router.push('/(auth)/activate-device');
                   }}
+                  style={styles.actionButton}
                 >
-                  <Text style={styles.actionPill}>Thêm</Text>
+                  <Text style={styles.actionButtonText}>Thêm</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     router.push('/(auth)/special-offer');
                   }}
+                  style={styles.actionButtonPrimary}
                 >
-                  <Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+                  <Text style={styles.actionButtonPrimaryText}>Nhận ưu đãi</Text>
                 </Pressable>
               </View>
             </View>
@@ -90,16 +92,18 @@ export default function ExploreScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     router.push('/(auth)/activate-device');
                   }}
+                  style={styles.actionButton}
                 >
-                  <Text style={styles.actionPill}>Thêm</Text>
+                  <Text style={styles.actionButtonText}>Thêm</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     router.push('/(auth)/special-offer');
                   }}
+                  style={styles.actionButtonPrimary}
                 >
-                  <Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+                  <Text style={styles.actionButtonPrimaryText}>Nhận ưu đãi</Text>
                 </Pressable>
               </View>
             </View>
@@ -238,39 +242,37 @@ const createStyles = (colors: any, isDark: boolean, topInset: number) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
-      flexWrap: 'wrap',
+      marginTop: 4,
     },
-    statusPill: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
+    actionButton: {
+      flex: 1,
+      flexBasis: 0,
+      minHeight: 48,
       borderRadius: 999,
-      backgroundColor: `${colors.primary}14`,
-      color: colors.primary,
-      fontSize: 13,
-      fontWeight: '700',
-      overflow: 'hidden',
-    },
-    actionPill: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 999,
-      backgroundColor: colors.background,
+      backgroundColor: isDark ? '#171717' : '#111111',
       borderWidth: 1,
       borderColor: colors.border,
-      color: colors.text,
-      fontSize: 13,
-      fontWeight: '700',
-      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    actionPillPrimary: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 999,
-      backgroundColor: colors.primary,
+    actionButtonText: {
       color: '#FFFFFF',
-      fontSize: 13,
-      fontWeight: '700',
-      overflow: 'hidden',
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    actionButtonPrimary: {
+      flex: 1,
+      flexBasis: 0,
+      minHeight: 48,
+      borderRadius: 999,
+      backgroundColor: '#EF4444',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionButtonPrimaryText: {
+      color: '#FFFFFF',
+      fontSize: 18,
+      fontWeight: '800',
     },
     reviewButton: {
       borderRadius: 999,

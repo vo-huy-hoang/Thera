@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { getPainAreaLabel } from '@/utils/constants';
 
 export default function PainInputScreen() {
   const router = useRouter();
@@ -55,8 +56,18 @@ export default function PainInputScreen() {
 
       setTodayPainLog(data);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Navigate to pain analysis screen
-      router.push('/pain-analysis');
+
+      const primaryAreaEntry = Object.entries(selectedPainAreas).sort((a, b) => b[1] - a[1])[0];
+      const primaryArea = primaryAreaEntry?.[0];
+      const primaryAreaLabel = primaryArea ? getPainAreaLabel(primaryArea) : 'Cổ';
+
+      router.push({
+        pathname: '/workout-plans',
+        params: {
+          painArea: primaryArea,
+          painAreaLabel: primaryAreaLabel,
+        },
+      });
     } catch (error: any) {
       console.error('Submit error:', error);
       alert('Có lỗi xảy ra: ' + error.message);

@@ -23,6 +23,8 @@ const userSchema = new mongoose.Schema({
   symptoms: [{ type: String }],
   surgery_history: { type: String, default: '' },
   preferred_time: { type: String, default: '08:00' },
+  personalized_plan_started_at: { type: Date, default: null },
+  personalized_plan_unlock_at: { type: Date, default: null },
   
   // Access control
   role: { type: String, enum: ['user', 'admin'], default: 'user' },

@@ -39,6 +39,8 @@ export default function FloatingChatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showGreetingBubble, setShowGreetingBubble] = useState(false);
+  const [isDockedLeft, setIsDockedLeft] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const pulseAnim = useRef(new RNAnimated.Value(1)).current;
@@ -77,8 +79,10 @@ export default function FloatingChatbot() {
         // Snap to left or right edge
         if (currentX < width / 2) {
           snapX = EDGE_PADDING; // Snap to left
+          setIsDockedLeft(true);
         } else {
           snapX = width - BUTTON_SIZE - EDGE_PADDING; // Snap to right
+          setIsDockedLeft(false);
         }
         
         // Keep within vertical bounds
@@ -137,6 +141,48 @@ export default function FloatingChatbot() {
     }
   }, [visible, user]);
 
+  useEffect(() => {
+    if (!user) {
+      setShowGreetingBubble(false);
+      return;
+    }
+
+    if (visible) {
+      setShowGreetingBubble(false);
+      return;
+    }
+
+    let cycleHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const showBubble = () => {
+      setShowGreetingBubble(true);
+
+      if (cycleHideTimeout) {
+        clearTimeout(cycleHideTimeout);
+      }
+
+      cycleHideTimeout = setTimeout(() => {
+        setShowGreetingBubble(false);
+      }, 6000);
+    };
+
+    showBubble();
+
+    const interval = setInterval(showBubble, 20000);
+
+    return () => {
+      if (cycleHideTimeout) {
+        clearTimeout(cycleHideTimeout);
+      }
+      clearInterval(interval);
+    };
+  }, [user?.id, user?.gender, visible]);
+
+  const honorific = user?.gender === 'Nam' ? 'Ông' : user?.gender === 'Nữ' ? 'Bà' : 'Bạn';
+  const greetingText =
+    honorific === 'Bạn'
+      ? 'Bạn đang khó chịu ở đâu? Tôi có thể giúp gì không?'
+      : `${honorific} chủ đang khó chịu ở đâu? Tôi có thể giúp gì không?`;
 
 
   const loadChatHistory = async () => {
@@ -205,6 +251,7 @@ export default function FloatingChatbot() {
 
   const handleOpen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setShowGreetingBubble(false);
     setVisible(true);
   };
 
@@ -316,6 +363,25 @@ export default function FloatingChatbot() {
             },
           ]}
         >
+          {showGreetingBubble && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.greetingBubbleWrap,
+                isDockedLeft ? styles.greetingBubbleLeft : styles.greetingBubbleRight,
+              ]}
+            >
+              <View style={styles.greetingBubble}>
+                <Text style={styles.greetingText}>{greetingText}</Text>
+                <View
+                  style={[
+                    styles.greetingTail,
+                    isDockedLeft ? styles.greetingTailLeft : styles.greetingTailRight,
+                  ]}
+                />
+              </View>
+            </View>
+          )}
           <RNAnimated.View style={{ transform: [{ scale: pulseAnim }] }}>
             <LinearGradient
               colors={['#5B9BD5', '#4A7FB8']}
@@ -396,10 +462,7 @@ export default function FloatingChatbot() {
                   {messages.length === 0 ? (
                     <View style={styles.emptyContainer}>
                       <Text style={styles.emptyTitle}>Xin chào! 👋</Text>
-                      <Text style={styles.emptyText}>
-                        Tôi là trợ lý AI của TheraEase.{'\n'}
-                        Hãy hỏi tôi về tình trạng đau, bài tập phù hợp, hoặc bất kỳ điều gì bạn cần!
-                      </Text>
+                      <Text style={styles.emptyText}>{greetingText}</Text>
                     </View>
                   ) : (
                     messages.map((msg, idx) => renderMessage(msg, idx))
@@ -493,6 +556,53 @@ const styles = StyleSheet.create({
     borderRadius: BUTTON_SIZE / 2,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  greetingBubbleWrap: {
+    position: 'absolute',
+    bottom: BUTTON_SIZE + 12,
+    width: 230,
+  },
+  greetingBubbleLeft: {
+    left: 0,
+  },
+  greetingBubbleRight: {
+    right: 0,
+  },
+  greetingBubble: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(91, 155, 213, 0.18)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  greetingText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#1E293B',
+    fontWeight: '600',
+  },
+  greetingTail: {
+    position: 'absolute',
+    bottom: -9,
+    width: 18,
+    height: 18,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '45deg' }],
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(91, 155, 213, 0.18)',
+  },
+  greetingTailLeft: {
+    left: 20,
+  },
+  greetingTailRight: {
+    right: 20,
   },
 
   keyboardAvoid: {

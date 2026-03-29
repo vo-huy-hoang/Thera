@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Dimensions, Image, FlatList, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Dimensions, Image, FlatList, ActivityIndicator, Pressable } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '@/stores/authStore';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
-import { Star } from 'lucide-react-native';
+import { Star, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { api } from '@/services/api';
 
 const { width } = Dimensions.get('window');
@@ -26,6 +26,7 @@ export default function ReviewsScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const listRef = useRef<FlatList<Review>>(null);
 
   useEffect(() => {
     fetchReviews();
@@ -74,6 +75,13 @@ export default function ReviewsScreen() {
     router.replace('/(auth)/best-version');
   };
 
+  const scrollToReview = async (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= reviews.length) return;
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    listRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+    setCurrentIndex(nextIndex);
+  };
+
   const renderReview = ({ item }: { item: Review }) => (
     <View style={styles.cardContainer}>
       <View style={styles.card}>
@@ -118,6 +126,7 @@ export default function ReviewsScreen() {
           ) : (
             <>
               <FlatList
+                ref={listRef}
                 data={reviews}
                 renderItem={renderReview}
                 keyExtractor={(item) => item.id}
@@ -131,17 +140,43 @@ export default function ReviewsScreen() {
                 scrollEventThrottle={16}
               />
               
-              {/* Pagination Dots */}
-              <View style={styles.dotsContainer}>
-                {reviews.map((_, i) => (
-                  <View 
-                    key={i} 
-                    style={[
-                      styles.dot, 
-                      currentIndex === i && styles.activeDot
-                    ]} 
+              <View style={styles.navigationRow}>
+                <Pressable
+                  onPress={() => void scrollToReview(currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                  style={[
+                    styles.arrowButton,
+                    currentIndex === 0 && styles.arrowButtonDisabled,
+                  ]}
+                >
+                  <ChevronLeft size={22} color={currentIndex === 0 ? '#9CA3AF' : '#111827'} />
+                </Pressable>
+
+                <View style={styles.dotsContainer}>
+                  {reviews.map((_, i) => (
+                    <View 
+                      key={i} 
+                      style={[
+                        styles.dot, 
+                        currentIndex === i && styles.activeDot
+                      ]} 
+                    />
+                  ))}
+                </View>
+
+                <Pressable
+                  onPress={() => void scrollToReview(currentIndex + 1)}
+                  disabled={currentIndex === reviews.length - 1}
+                  style={[
+                    styles.arrowButton,
+                    currentIndex === reviews.length - 1 && styles.arrowButtonDisabled,
+                  ]}
+                >
+                  <ChevronRight
+                    size={22}
+                    color={currentIndex === reviews.length - 1 ? '#9CA3AF' : '#111827'}
                   />
-                ))}
+                </Pressable>
               </View>
             </>
           )}
@@ -245,10 +280,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  navigationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 14,
+  },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    alignItems: 'center',
   },
   dot: {
     width: 8,
@@ -260,6 +302,24 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: '#10B981',
     width: 24,
+  },
+  arrowButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  arrowButtonDisabled: {
+    opacity: 0.55,
   },
   footer: {
     paddingHorizontal: 40,

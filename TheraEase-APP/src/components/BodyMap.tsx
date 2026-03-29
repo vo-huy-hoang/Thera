@@ -1,20 +1,96 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image, Dimensions, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Image, Dimensions } from 'react-native';
+import Svg, { Circle, Line, Polygon } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
+import { useAuthStore } from '@/stores/authStore';
 import { colors } from '@/utils/theme';
 import { PAIN_AREAS } from '@/utils/constants';
-import * as Haptics from 'expo-haptics';
 
 interface BodyMapProps {
   selectedAreas: Record<string, number>;
   onAreaPress: (area: string, level: number) => void;
 }
 
+type FocusArea = {
+  id: string;
+  label: string;
+  targetX: number;
+  targetY: number;
+  labelX: number;
+  labelY: number;
+  side: 'left' | 'right';
+};
+
 const { width } = Dimensions.get('window');
-const BODY_WIDTH = width * 0.8;
-const BODY_HEIGHT = BODY_WIDTH * 2.2;
+const MAP_WIDTH = width - 32;
+const MAP_HEIGHT = 500;
+
+const MALE_IMAGE = require('../../assets/gender-male.png');
+const FEMALE_IMAGE = require('../../assets/gender-female.png');
 
 export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
+  const { user } = useAuthStore();
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+
+  const focusAreas = useMemo<FocusArea[]>(
+    () => [
+      {
+        id: PAIN_AREAS.NECK,
+        label: 'Cổ',
+        targetX: MAP_WIDTH * 0.5,
+        targetY: MAP_HEIGHT * 0.16,
+        labelX: MAP_WIDTH * 0.08,
+        labelY: MAP_HEIGHT * 0.08,
+        side: 'left',
+      },
+      {
+        id: PAIN_AREAS.SHOULDER_LEFT,
+        label: 'Vai trái',
+        targetX: MAP_WIDTH * 0.31,
+        targetY: MAP_HEIGHT * 0.22,
+        labelX: MAP_WIDTH * 0.02,
+        labelY: MAP_HEIGHT * 0.22,
+        side: 'left',
+      },
+      {
+        id: PAIN_AREAS.SHOULDER_RIGHT,
+        label: 'Vai phải',
+        targetX: MAP_WIDTH * 0.69,
+        targetY: MAP_HEIGHT * 0.22,
+        labelX: MAP_WIDTH * 0.68,
+        labelY: MAP_HEIGHT * 0.22,
+        side: 'right',
+      },
+      {
+        id: PAIN_AREAS.UPPER_BACK,
+        label: 'Lưng trên',
+        targetX: MAP_WIDTH * 0.5,
+        targetY: MAP_HEIGHT * 0.31,
+        labelX: MAP_WIDTH * 0.72,
+        labelY: MAP_HEIGHT * 0.34,
+        side: 'right',
+      },
+      {
+        id: PAIN_AREAS.MIDDLE_BACK,
+        label: 'Lưng giữa',
+        targetX: MAP_WIDTH * 0.5,
+        targetY: MAP_HEIGHT * 0.45,
+        labelX: MAP_WIDTH * 0.03,
+        labelY: MAP_HEIGHT * 0.44,
+        side: 'left',
+      },
+      {
+        id: PAIN_AREAS.LOWER_BACK,
+        label: 'Lưng dưới',
+        targetX: MAP_WIDTH * 0.5,
+        targetY: MAP_HEIGHT * 0.6,
+        labelX: MAP_WIDTH * 0.71,
+        labelY: MAP_HEIGHT * 0.58,
+        side: 'right',
+      },
+    ],
+    [],
+  );
 
   const getPainColor = (level: number) => {
     if (level === 0) return colors.painNone;
@@ -23,58 +99,22 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
     return colors.painSevere;
   };
 
-  const getPainLabel = (level: number) => {
-    if (level === 0) return 'Không đau';
-    if (level <= 3) return 'Đau nhẹ';
-    if (level <= 7) return 'Đau vừa';
-    return 'Đau nặng';
-  };
-
-  const handleAreaPress = (area: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleAreaSelect = (area: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedArea(area);
   };
 
   const handleLevelSelect = (level: number) => {
-    if (selectedArea) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      onAreaPress(selectedArea, level);
-      setSelectedArea(null);
-    }
+    if (!selectedArea) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onAreaPress(selectedArea, level);
+    setSelectedArea(null);
   };
 
-  // Định nghĩa vị trí các vùng trên body (% của chiều cao/rộng)
-  const bodyAreas = [
-    // Cổ
-    { id: PAIN_AREAS.NECK, label: 'Cổ', top: '7%', left: '40%', width: '20%', height: '5%' },
-    
-    // Vai
-    { id: PAIN_AREAS.SHOULDER_LEFT, label: 'Vai trái', top: '12%', left: '15%', width: '25%', height: '8%' },
-    { id: PAIN_AREAS.SHOULDER_RIGHT, label: 'Vai phải', top: '12%', left: '60%', width: '25%', height: '8%' },
-    
-    // Lưng
-    { id: PAIN_AREAS.UPPER_BACK, label: 'Lưng trên', top: '20%', left: '35%', width: '30%', height: '12%' },
-    { id: PAIN_AREAS.MIDDLE_BACK, label: 'Lưng giữa', top: '32%', left: '32%', width: '36%', height: '15%' },
-    { id: PAIN_AREAS.LOWER_BACK, label: 'Lưng dưới', top: '47%', left: '32%', width: '36%', height: '12%' },
-    
-    // Tay (mới thêm)
-    { id: 'arm_left', label: 'Cánh tay trái', top: '20%', left: '8%', width: '15%', height: '20%' },
-    { id: 'arm_right', label: 'Cánh tay phải', top: '20%', left: '77%', width: '15%', height: '20%' },
-    { id: 'hand_left', label: 'Bàn tay trái', top: '40%', left: '5%', width: '12%', height: '8%' },
-    { id: 'hand_right', label: 'Bàn tay phải', top: '40%', left: '83%', width: '12%', height: '8%' },
-    
-    // Chân (mới thêm)
-    { id: 'thigh_left', label: 'Đùi trái', top: '59%', left: '32%', width: '16%', height: '15%' },
-    { id: 'thigh_right', label: 'Đùi phải', top: '59%', left: '52%', width: '16%', height: '15%' },
-    { id: 'leg_left', label: 'Cẳng chân trái', top: '74%', left: '32%', width: '16%', height: '15%' },
-    { id: 'leg_right', label: 'Cẳng chân phải', top: '74%', left: '52%', width: '16%', height: '15%' },
-    { id: 'foot_left', label: 'Bàn chân trái', top: '89%', left: '30%', width: '18%', height: '8%' },
-    { id: 'foot_right', label: 'Bàn chân phải', top: '89%', left: '52%', width: '18%', height: '8%' },
-  ];
+  const avatarSource = user?.gender === 'Nữ' ? FEMALE_IMAGE : MALE_IMAGE;
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.container}>
-      {/* Legend màu 4 cấp độ */}
+    <View style={styles.container}>
       <View style={styles.legendContainer}>
         <View style={styles.legendRow}>
           <View style={[styles.legendDot, { backgroundColor: colors.painNone }]} />
@@ -94,84 +134,94 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
         </View>
       </View>
 
-      <Text style={styles.instruction}>
-        Chạm vào vùng đau/tê trên cơ thể để chọn mức độ
-      </Text>
+      <Text style={styles.instruction}>Chạm vào các nhãn hoặc điểm chỉ dẫn để chọn vùng đau.</Text>
 
-      {/* Body Model với overlay clickable areas */}
-      <View style={[styles.bodyContainer, { width: BODY_WIDTH, height: BODY_HEIGHT }]}>
-        {/* Background body silhouette - Đẹp hơn */}
-        <View style={styles.bodySilhouette}>
-          {/* Head */}
-          <View style={[styles.bodyPart, styles.head]} />
-          
-          {/* Neck */}
-          <View style={[styles.bodyPart, styles.neck]} />
-          
-          {/* Torso */}
-          <View style={[styles.bodyPart, styles.torso]} />
-          
-          {/* Arms - Chi tiết hơn */}
-          <View style={[styles.bodyPart, styles.armLeft]} />
-          <View style={[styles.bodyPart, styles.armRight]} />
-          <View style={[styles.bodyPart, styles.forearmLeft]} />
-          <View style={[styles.bodyPart, styles.forearmRight]} />
-          <View style={[styles.bodyPart, styles.handLeft]} />
-          <View style={[styles.bodyPart, styles.handRight]} />
-          
-          {/* Legs - Chi tiết hơn */}
-          <View style={[styles.bodyPart, styles.thighLeft]} />
-          <View style={[styles.bodyPart, styles.thighRight]} />
-          <View style={[styles.bodyPart, styles.calfLeft]} />
-          <View style={[styles.bodyPart, styles.calfRight]} />
-          <View style={[styles.bodyPart, styles.footLeft]} />
-          <View style={[styles.bodyPart, styles.footRight]} />
+      <View style={styles.mapCard}>
+        <View style={styles.mapWrap}>
+          <View style={styles.imageWindow}>
+            <Image source={avatarSource} style={styles.bodyImage} resizeMode="cover" />
+            <View style={styles.imageShade} />
+          </View>
+
+          <Svg width={MAP_WIDTH} height={MAP_HEIGHT} style={styles.svgLayer}>
+            {focusAreas.map((area) => {
+              const painLevel = selectedAreas[area.id] || 0;
+              const painColor = painLevel > 0 ? getPainColor(painLevel) : '#7CC6FF';
+              const labelAnchorX = area.side === 'left' ? area.labelX + 106 : area.labelX;
+              const labelAnchorY = area.labelY + 22;
+              const arrowTipX = area.targetX;
+              const arrowTipY = area.targetY;
+              const arrowHead =
+                area.side === 'left'
+                  ? `${arrowTipX},${arrowTipY} ${arrowTipX - 12},${arrowTipY - 6} ${arrowTipX - 12},${arrowTipY + 6}`
+                  : `${arrowTipX},${arrowTipY} ${arrowTipX + 12},${arrowTipY - 6} ${arrowTipX + 12},${arrowTipY + 6}`;
+
+              return (
+                <React.Fragment key={`${area.id}-line`}>
+                  <Line
+                    x1={labelAnchorX}
+                    y1={labelAnchorY}
+                    x2={arrowTipX}
+                    y2={arrowTipY}
+                    stroke={painColor}
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                  />
+                  <Polygon points={arrowHead} fill={painColor} />
+                  <Circle cx={arrowTipX} cy={arrowTipY} r={9} fill={painColor} opacity={0.18} />
+                  <Circle cx={arrowTipX} cy={arrowTipY} r={4.5} fill={painColor} />
+                </React.Fragment>
+              );
+            })}
+          </Svg>
+
+          {focusAreas.map((area) => {
+            const painLevel = selectedAreas[area.id] || 0;
+            const isSelected = painLevel > 0;
+            const painColor = isSelected ? getPainColor(painLevel) : '#7CC6FF';
+
+            return (
+              <React.Fragment key={area.id}>
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  onPress={() => handleAreaSelect(area.id)}
+                  style={[
+                    styles.labelChip,
+                    {
+                      top: area.labelY,
+                      left: area.labelX,
+                      borderColor: painColor,
+                      backgroundColor: isSelected ? `${painColor}18` : '#FFFFFF',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.labelChipText, { color: painColor }]}>{area.label}</Text>
+                  {isSelected && <Text style={[styles.levelPill, { color: painColor }]}>{painLevel}/10</Text>}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  onPress={() => handleAreaSelect(area.id)}
+                  style={[
+                    styles.targetHotspot,
+                    {
+                      top: area.targetY - 22,
+                      left: area.targetX - 22,
+                      borderColor: painColor,
+                      backgroundColor: isSelected ? `${painColor}20` : 'rgba(124, 198, 255, 0.12)',
+                    },
+                  ]}
+                />
+              </React.Fragment>
+            );
+          })}
         </View>
-
-        {/* Clickable overlay areas */}
-        {bodyAreas.map((area) => {
-          const painLevel = selectedAreas[area.id] || 0;
-          const painColor = getPainColor(painLevel);
-          const isSelected = painLevel > 0;
-
-          return (
-            <TouchableOpacity
-              key={area.id}
-              style={[
-                styles.clickableArea,
-                {
-                  top: area.top as any,
-                  left: area.left as any,
-                  width: area.width as any,
-                  height: area.height as any,
-                  backgroundColor: isSelected ? painColor + '80' : 'rgba(91, 155, 213, 0.1)',
-                  borderColor: isSelected ? painColor : 'rgba(91, 155, 213, 0.4)',
-                  borderWidth: isSelected ? 2.5 : 1.5,
-                },
-              ]}
-              onPress={() => handleAreaPress(area.id)}
-              activeOpacity={0.7}
-            >
-              {isSelected && (
-                <View style={styles.areaLabelContainer}>
-                  <Text style={styles.areaLabel}>{area.label}</Text>
-                  <Text style={styles.areaLevel}>{painLevel}/10</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
       </View>
 
-      {/* Pain Level Selector Modal */}
       {selectedArea && (
         <View style={styles.levelSelector}>
-          <Text style={styles.levelTitle}>
-            Chọn mức độ đau/tê cho vùng này:
-          </Text>
-          <Text style={styles.levelSubtitle}>
-            💡 Tê = mức độ 8-10 (triệu chứng nặng)
-          </Text>
+          <Text style={styles.levelTitle}>Chọn mức độ đau cho vùng này</Text>
+          <Text style={styles.levelSubtitle}>Nếu bị tê rõ hoặc đau mạnh, chọn mức 8-10.</Text>
           <View style={styles.levelButtons}>
             <TouchableOpacity
               style={[styles.levelButton, { backgroundColor: colors.painNone }]}
@@ -202,33 +252,27 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
               <Text style={styles.levelLabel}>Nặng/Tê</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setSelectedArea(null)}
-          >
+          <TouchableOpacity style={styles.cancelButton} onPress={() => setSelectedArea(null)}>
             <Text style={styles.cancelText}>Hủy</Text>
           </TouchableOpacity>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-  },
   container: {
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: 24,
   },
   legendContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: 14,
+    paddingHorizontal: 10,
   },
   legendRow: {
     flexDirection: 'row',
@@ -238,205 +282,114 @@ const styles = StyleSheet.create({
   legendDot: {
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#999',
+    borderColor: '#94A3B8',
   },
   legendText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   instruction: {
     fontSize: 13,
+    lineHeight: 20,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 32,
+    marginBottom: 16,
+    paddingHorizontal: 24,
     fontWeight: '500',
   },
-  bodyContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  bodySilhouette: {
+  mapCard: {
     width: '100%',
-    height: '100%',
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  mapWrap: {
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT,
+    alignSelf: 'center',
     position: 'relative',
   },
-  bodyPart: {
+  imageWindow: {
     position: 'absolute',
-    backgroundColor: '#E3F2FD',
-    borderWidth: 2,
-    borderColor: '#90CAF9',
+    top: 36,
+    left: MAP_WIDTH * 0.18,
+    width: MAP_WIDTH * 0.64,
+    height: MAP_HEIGHT * 0.76,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: '#F8FAFC',
   },
-  // Head
-  head: {
-    top: '1%',
-    left: '38%',
-    width: '24%',
-    height: '6%',
-    borderRadius: 100,
-  },
-  // Neck
-  neck: {
-    top: '7%',
-    left: '42%',
-    width: '16%',
-    height: '4%',
-    borderRadius: 8,
-  },
-  // Torso
-  torso: {
-    top: '11%',
-    left: '30%',
-    width: '40%',
-    height: '37%',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-  },
-  // Arms - Upper
-  armLeft: {
-    top: '13%',
-    left: '12%',
-    width: '18%',
-    height: '18%',
-    borderRadius: 20,
-    transform: [{ rotate: '8deg' }],
-  },
-  armRight: {
-    top: '13%',
-    right: '12%',
-    width: '18%',
-    height: '18%',
-    borderRadius: 20,
-    transform: [{ rotate: '-8deg' }],
-  },
-  // Forearms
-  forearmLeft: {
-    top: '31%',
-    left: '8%',
-    width: '15%',
-    height: '16%',
-    borderRadius: 18,
-    transform: [{ rotate: '5deg' }],
-  },
-  forearmRight: {
-    top: '31%',
-    right: '8%',
-    width: '15%',
-    height: '16%',
-    borderRadius: 18,
-    transform: [{ rotate: '-5deg' }],
-  },
-  // Hands
-  handLeft: {
-    top: '47%',
-    left: '6%',
-    width: '12%',
-    height: '6%',
-    borderRadius: 15,
-  },
-  handRight: {
-    top: '47%',
-    right: '6%',
-    width: '12%',
-    height: '6%',
-    borderRadius: 15,
-  },
-  // Thighs
-  thighLeft: {
-    top: '48%',
-    left: '32%',
-    width: '16%',
-    height: '20%',
-    borderRadius: 18,
-  },
-  thighRight: {
-    top: '48%',
-    right: '32%',
-    width: '16%',
-    height: '20%',
-    borderRadius: 18,
-  },
-  // Calves
-  calfLeft: {
-    top: '68%',
-    left: '32%',
-    width: '16%',
-    height: '20%',
-    borderRadius: 16,
-  },
-  calfRight: {
-    top: '68%',
-    right: '32%',
-    width: '16%',
-    height: '20%',
-    borderRadius: 16,
-  },
-  // Feet
-  footLeft: {
-    top: '88%',
-    left: '30%',
-    width: '18%',
-    height: '6%',
-    borderRadius: 12,
-  },
-  footRight: {
-    top: '88%',
-    right: '30%',
-    width: '18%',
-    height: '6%',
-    borderRadius: 12,
-  },
-  clickableArea: {
+  bodyImage: {
     position: 'absolute',
-    borderRadius: 12,
+    top: -18,
+    left: -10,
+    width: MAP_WIDTH * 0.7,
+    height: MAP_HEIGHT * 0.98,
+  },
+  imageShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  svgLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  labelChip: {
+    position: 'absolute',
+    minWidth: 110,
+    minHeight: 44,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     justifyContent: 'center',
-    alignItems: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  areaLabelContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
+  labelChipText: {
+    fontSize: 13,
+    fontWeight: '800',
   },
-  areaLabel: {
-    fontSize: 9,
-    color: '#FFF',
-    fontWeight: '600',
-    textAlign: 'center',
+  levelPill: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '700',
   },
-  areaLevel: {
-    fontSize: 10,
-    color: '#FFF',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 1,
+  targetHotspot: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
   },
   levelSelector: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
+    marginTop: 18,
     backgroundColor: colors.surface,
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    padding: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   levelTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginBottom: 6,
     color: colors.text,
     textAlign: 'center',
   },
@@ -454,7 +407,7 @@ const styles = StyleSheet.create({
   levelButton: {
     width: 70,
     height: 70,
-    borderRadius: 12,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -465,7 +418,7 @@ const styles = StyleSheet.create({
   },
   levelButtonText: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#FFF',
   },
   levelLabel: {
@@ -473,6 +426,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginTop: 4,
     textAlign: 'center',
+    fontWeight: '700',
   },
   cancelButton: {
     padding: 12,
@@ -481,6 +435,6 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 16,
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

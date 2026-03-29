@@ -29,6 +29,8 @@ interface User {
   symptoms: string[];
   surgery_history: string;
   preferred_time: string;
+  personalized_plan_started_at?: string | null;
+  personalized_plan_unlock_at?: string | null;
   onboarding_completed: boolean;
   owned_devices: Array<string | OwnedDevice>;
   created_at: string;

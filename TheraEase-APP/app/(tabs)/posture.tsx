@@ -148,18 +148,18 @@ export default function PostureScreen() {
                 <Text style={styles.sectionTitle}>{activeGroup.category}</Text>
 
                 <PostureCard
-                  title="Tư thế đúng"
-                  icon={<CheckCircle2 size={20} color="#16A34A" />}
-                  item={activeGroup.correct}
-                  emptyText="Chưa có ảnh tư thế đúng"
-                  styles={styles}
-                />
-
-                <PostureCard
                   title="Tư thế sai"
                   icon={<XCircle size={20} color="#DC2626" />}
                   item={activeGroup.incorrect}
                   emptyText="Chưa có ảnh tư thế sai"
+                  styles={styles}
+                />
+
+                <PostureCard
+                  title="Tư thế đúng"
+                  icon={<CheckCircle2 size={20} color="#16A34A" />}
+                  item={activeGroup.correct}
+                  emptyText="Chưa có ảnh tư thế đúng"
                   styles={styles}
                 />
               </View>
