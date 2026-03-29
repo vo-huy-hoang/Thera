@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
   Easing
 } from 'react-native-reanimated';
-import { Flame, TrendingUp, Heart, Activity, Target, ClipboardList, BarChart2, X, TrendingDown, Minus } from 'lucide-react-native';
+import { Flame, TrendingUp, Heart, Activity, Target, ClipboardList, BarChart2, X, TrendingDown, Minus, Lock } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useAuthStore } from '@/stores/authStore';
 import { usePainStore } from '@/stores/painStore';
@@ -82,6 +82,13 @@ export default function HomeScreen() {
 
   const scoreProgress = useSharedValue(0);
   const scoreNumber = useSharedValue(0);
+
+  const personalizedPlanUnlocked = useMemo(() => {
+    if (!user?.personalized_plan_unlock_at) return false;
+    const unlockAt = new Date(user.personalized_plan_unlock_at).getTime();
+    if (Number.isNaN(unlockAt)) return false;
+    return Date.now() >= unlockAt;
+  }, [user?.personalized_plan_unlock_at]);
 
   const motivationMessages = [
     'Tiếp tục cố gắng!',
@@ -616,7 +623,7 @@ export default function HomeScreen() {
           activeOpacity={0.8}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/workout-plans');
+            router.push('/pain-input');
           }}
         >
           <LinearGradient
@@ -628,8 +635,7 @@ export default function HomeScreen() {
             <View style={styles.plansHeader}>
               <ClipboardList size={28} color="#FFF" />
               <View style={styles.plansTextContainer}>
-                <Text style={styles.plansTitle}>Lộ trình trị liệu</Text>
-                <Text style={styles.plansSubtitle}>14 ngày</Text>
+                <Text style={styles.plansTitle}>14 ngày phục hồi chuyên sâu</Text>
               </View>
             </View>
             <Text style={styles.plansDescription}>
@@ -642,21 +648,26 @@ export default function HomeScreen() {
       {/* CTA Button - Bắt đầu trị liệu */}
       <Animated.View entering={FadeInDown.delay(500)}>
         <TouchableOpacity
-          activeOpacity={0.8}
+          activeOpacity={personalizedPlanUnlocked ? 0.85 : 1}
+          disabled={!personalizedPlanUnlocked}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            // Luôn mở Body Map để chọn vùng đau hàng ngày
-            router.push('/pain-input');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           }}
         >
           <LinearGradient
-            colors={['#5B9BD5', '#4A7FB8']}
+            colors={personalizedPlanUnlocked ? ['#5B9BD5', '#4A7FB8'] : ['#A7C4E4', '#8FAFD3']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.ctaButton}
           >
-            <Target size={24} color="#FFFFFF" strokeWidth={2.5} />
-            <Text style={styles.ctaButtonText}>BẮT ĐẦU TRỊ LIỆU HÔM NAY</Text>
+            {personalizedPlanUnlocked ? (
+              <Target size={24} color="#FFFFFF" strokeWidth={2.5} />
+            ) : (
+              <Lock size={24} color="#6B7280" strokeWidth={2.2} />
+            )}
+            <Text style={personalizedPlanUnlocked ? styles.ctaButtonText : styles.ctaButtonTextDisabled}>
+              Cá nhân hoá lộ trình hôm nay
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -1046,6 +1057,12 @@ const createStyles = (colors: any, isDark: boolean) =>
     fontWeight: 'bold',
     color: '#FFF',
     letterSpacing: 1,
+  },
+  ctaButtonTextDisabled: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#6B7280',
+    letterSpacing: 0.4,
   },
   chartCard: {
     padding: 20,

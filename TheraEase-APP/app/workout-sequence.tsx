@@ -358,7 +358,7 @@ import { Text, ActivityIndicator } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Play, Pause, SkipForward, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Play, Pause, CheckCircle } from 'lucide-react-native';
 import { Video, ResizeMode } from 'expo-av';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { useAuthStore } from '@/stores/authStore';
@@ -383,15 +383,16 @@ interface Exercise {
 export default function WorkoutSequenceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoRef, setVideoRef] = useState<Video | null>(null);
   const [showControls, setShowControls] = useState(true);
   const [dayVideoUrl, setDayVideoUrl] = useState<string | null>(null);
+  const [isStartingCountdown, setIsStartingCountdown] = useState(false);
+  const [videoCompleted, setVideoCompleted] = useState(false);
 
   useEffect(() => {
     loadExercises();
@@ -435,7 +436,36 @@ export default function WorkoutSequenceScreen() {
     }
   };
 
+  const maybeStartPersonalizedPlanCountdown = async () => {
+    if (!user || isStartingCountdown) return;
+    if (user.personalized_plan_started_at && user.personalized_plan_unlock_at) return;
+    if ((params.day as string) !== '1') return;
+
+    try {
+      setIsStartingCountdown(true);
+      const startedAt = new Date();
+      const unlockAt = new Date(startedAt.getTime() + 15 * 24 * 60 * 60 * 1000);
+
+      const updatedUser = await api.put('/auth/profile', {
+        personalized_plan_started_at: startedAt.toISOString(),
+        personalized_plan_unlock_at: unlockAt.toISOString(),
+      });
+
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+    } catch (error) {
+      console.warn('Start personalized plan countdown error:', error);
+    } finally {
+      setIsStartingCountdown(false);
+    }
+  };
+
   const handlePlayPause = async () => {
+    if (!isPlaying) {
+      await maybeStartPersonalizedPlanCountdown();
+    }
+
     if (isYoutubeVideo) {
       setIsPlaying(prev => !prev);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -453,17 +483,6 @@ export default function WorkoutSequenceScreen() {
     }
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const handleNext = async () => {
-    if (currentIndex < exercises.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setIsPlaying(false);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } else {
-      // All exercises completed
-      handleComplete();
-    }
   };
 
   const handleComplete = async () => {
@@ -492,10 +511,9 @@ export default function WorkoutSequenceScreen() {
   };
 
   const handleVideoEnd = () => {
-    // Auto-play next exercise after 2 seconds
-    setTimeout(() => {
-      handleNext();
-    }, 2000);
+    setIsPlaying(false);
+    setShowControls(true);
+    setVideoCompleted(true);
   };
 
   const toggleControls = () => {
@@ -524,7 +542,7 @@ export default function WorkoutSequenceScreen() {
     );
   }
 
-  const currentExercise = exercises[currentIndex];
+  const currentExercise = exercises[0];
   const currentVideoUrl = dayVideoUrl || currentExercise.video_url;
   const isYoutubeVideo = isYouTubeUrl(currentVideoUrl);
   const youtubeVideoId = isYoutubeVideo ? extractYouTubeVideoId(currentVideoUrl) : null;
@@ -591,9 +609,6 @@ export default function WorkoutSequenceScreen() {
               
               <View style={styles.headerInfo}>
                 <Text style={styles.headerTitle}>{currentExercise.title}</Text>
-                <Text style={styles.headerSubtitle}>
-                  Bài {currentIndex + 1}/{exercises.length}
-                </Text>
               </View>
             </LinearGradient>
 
@@ -616,28 +631,17 @@ export default function WorkoutSequenceScreen() {
               colors={['transparent', 'rgba(0,0,0,0.8)']}
               style={styles.bottomControls}
             >
-              <View style={styles.progressInfo}>
-                <Text style={styles.progressText}>
-                  {currentIndex + 1} / {exercises.length} bài tập
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.nextButton}
-                onPress={handleNext}
-              >
-                {currentIndex < exercises.length - 1 ? (
-                  <>
-                    <SkipForward size={24} color="#FFF" />
-                    <Text style={styles.nextButtonText}>Tiếp theo</Text>
-                  </>
-                ) : (
+              {videoCompleted && (
+                <TouchableOpacity
+                  style={styles.nextButton}
+                  onPress={handleComplete}
+                >
                   <>
                     <CheckCircle size={24} color="#FFF" />
-                    <Text style={styles.nextButtonText}>Hoàn thành</Text>
+                    <Text style={styles.nextButtonText}>Xong</Text>
                   </>
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+              )}
             </LinearGradient>
           </Animated.View>
         )}
@@ -703,10 +707,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFF',
     marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   centerControls: {
     flex: 1,

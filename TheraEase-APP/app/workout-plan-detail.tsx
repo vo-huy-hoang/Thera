@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Calendar, CheckCircle, Lock, Play } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '@/stores/authStore';
 import { getWorkoutPlanById, getPlanExercises, getPlanProgress, WorkoutPlan, PlanExercise } from '@/services/workoutPlans';
 import PlanCompletionModal from '@/components/PlanCompletionModal';
@@ -35,6 +36,12 @@ export default function WorkoutPlanDetailScreen() {
   useEffect(() => {
     loadPlanDetail();
   }, [params.id]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void loadPlanDetail();
+    }, [params.id, user?.id])
+  );
 
   const loadPlanDetail = async () => {
     if (!params.id || !user) return;
@@ -158,7 +165,10 @@ export default function WorkoutPlanDetailScreen() {
   const currentDayData = dayExercises.find(d => d.day === currentDay);
   const completedCount = dayExercises.filter(d => d.isCompleted).length;
   const progressPercent = (completedCount / FIXED_PLAN_DAYS) * 100;
-  const displayPlanTitle = plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`);
+  const selectedAreaLabel = typeof params.selectedAreaLabel === 'string' ? params.selectedAreaLabel : '';
+  const displayPlanTitle = selectedAreaLabel
+    ? `Lộ trình trị liệu ${selectedAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`
+    : plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -248,23 +258,6 @@ export default function WorkoutPlanDetailScreen() {
         {/* Current Day Exercises */}
         {currentDayData && (
           <Animated.View entering={FadeInDown.delay(200)} style={styles.exercisesSection}>
-            <Text style={styles.sectionTitle}>
-              Ngày {currentDay} - {currentDayData.exercises.length} bài tập
-            </Text>
-
-            {currentDayData.exercises.map((planEx, index) => (
-              <View key={planEx.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseNumber}>
-                  <Text style={styles.exerciseNumberText}>{index + 1}</Text>
-                </View>
-                <View style={styles.exerciseInfo}>
-                  <Text style={styles.exerciseTitle}>
-                    {planEx.exercise?.title || 'Bài tập'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-
             {/* Start Button */}
             {currentDayData.exercises.length > 0 && (
               <LinearGradient

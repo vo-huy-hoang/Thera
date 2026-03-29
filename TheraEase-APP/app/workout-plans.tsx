@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Calendar, Target, Lock, CheckCircle } from 'lucide-react-native';
@@ -16,6 +16,7 @@ const FIXED_PLAN_DAYS = 14;
 
 export default function WorkoutPlansScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ painArea?: string; painAreaLabel?: string }>();
   const { user } = useAuthStore();
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +43,43 @@ export default function WorkoutPlansScreen() {
     }
   };
 
+  const selectedPainArea = typeof params.painArea === 'string' ? params.painArea : '';
+  const selectedPainAreaLabel = typeof params.painAreaLabel === 'string' ? params.painAreaLabel : '';
+
+  const mapPainAreaToPlanTargets = (area: string) => {
+    switch (area) {
+      case 'neck':
+      case 'shoulder_left':
+      case 'shoulder_right':
+        return ['neck', 'both', 'shoulder'];
+      case 'upper_back':
+        return ['upper_back', 'back', 'both'];
+      case 'middle_back':
+        return ['middle_back', 'back', 'both'];
+      case 'lower_back':
+        return ['lower_back', 'back', 'both'];
+      default:
+        return area ? [area, 'both'] : [];
+    }
+  };
+
+  const visiblePlans = useMemo(() => {
+    if (!selectedPainArea) return plans;
+
+    const targetAreas = mapPainAreaToPlanTargets(selectedPainArea);
+    const matched = plans.filter((plan) => targetAreas.includes(plan.target_area));
+
+    return matched.length > 0 ? matched.slice(0, 1) : plans.slice(0, 1);
+  }, [plans, selectedPainArea]);
+
+  const buildPlanTitle = (plan: WorkoutPlan) => {
+    if (selectedPainAreaLabel) {
+      return `Lộ trình trị liệu ${selectedPainAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`;
+    }
+
+    return plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`);
+  };
+
   const handlePlanPress = (plan: WorkoutPlan) => {
     if (plan.is_pro && !user?.is_pro) {
       // Show PRO required message
@@ -50,7 +88,14 @@ export default function WorkoutPlansScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/workout-plan-detail?id=${plan.id}`);
+    router.push({
+      pathname: '/workout-plan-detail',
+      params: {
+        id: plan.id,
+        selectedArea: selectedPainArea,
+        selectedAreaLabel: selectedPainAreaLabel,
+      },
+    });
   };
 
   const getTargetAreaName = (area: string) => {
@@ -106,7 +151,7 @@ export default function WorkoutPlansScreen() {
 
         {/* Plans List */}
         <View style={styles.plansList}>
-          {plans.map((plan, index) => (
+          {visiblePlans.map((plan, index) => (
             <Animated.View
               key={plan.id}
               entering={FadeInDown.delay(100 * (index + 1)).duration(400)}
@@ -146,7 +191,7 @@ export default function WorkoutPlansScreen() {
 
                   {/* Title */}
                   <Text style={styles.planTitle}>
-                    {plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`)}
+                    {buildPlanTitle(plan)}
                   </Text>
 
                   {/* Description */}
@@ -158,7 +203,7 @@ export default function WorkoutPlansScreen() {
                   <View style={styles.targetBadge}>
                     <Target size={16} color="#FFF" />
                     <Text style={styles.targetText}>
-                      {getTargetAreaName(plan.target_area)}
+                      {selectedPainAreaLabel || getTargetAreaName(plan.target_area)}
                     </Text>
                   </View>
 
@@ -175,7 +220,7 @@ export default function WorkoutPlansScreen() {
         </View>
 
         {/* Empty State */}
-        {plans.length === 0 && (
+        {visiblePlans.length === 0 && (
           <View style={styles.emptyState}>
             <Calendar size={64} color={colors.textSecondary} />
             <Text style={styles.emptyText}>Chưa có lộ trình nào</Text>
