@@ -40,10 +40,33 @@ export default function ActivateDeviceScreen() {
 	}, [isScanning, permission, requestPermission]);
 
 	const handleActivateCode = async (codeStr: string) => {
-		if (!codeStr) return;
+		const normalizedCode = codeStr.trim().toUpperCase();
+		if (!normalizedCode) return;
+
+		if (!user || user.id === "guest") {
+			setLoading(true);
+			try {
+				await api.post("/codes/validate", { code: normalizedCode });
+				await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+				router.replace({
+					pathname: "/(auth)/login",
+					params: { activationCode: normalizedCode },
+				});
+			} catch (error: any) {
+				console.warn("Validate activation code error:", error?.message || error);
+				Alert.alert(
+					"Lỗi",
+					error?.message || "Mã không hợp lệ hoặc chưa được kích hoạt.",
+				);
+			} finally {
+				setLoading(false);
+			}
+			return;
+		}
+
 		setLoading(true);
 		try {
-			const response = await api.post("/codes/activate", { code: codeStr });
+			const response = await api.post("/codes/activate", { code: normalizedCode });
 
 			if (response?.user) {
 				setUser(response.user);

@@ -2,29 +2,32 @@ import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/stores/authStore';
+import { createGuestUser, useAuthStore } from '@/stores/authStore';
 import { colors } from '@/utils/theme';
 
 export default function Index() {
   const router = useRouter();
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, setUser } = useAuthStore();
 
   useEffect(() => {
     if (!isLoading) {
       // Add small delay to ensure layout is mounted
       setTimeout(() => {
         if (user) {
-          if (user.onboarding_completed) {
+          if (user.id === 'guest') {
+            router.replace('/(auth)/welcome');
+          } else if (user.onboarding_completed) {
             router.replace('/(tabs)/home');
           } else {
             router.replace('/(auth)/welcome');
           }
         } else {
-          router.replace('/(auth)/login');
+          setUser(createGuestUser());
+          router.replace('/(auth)/welcome');
         }
       }, 100);
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, setUser]);
 
   return (
     <View style={styles.container}>

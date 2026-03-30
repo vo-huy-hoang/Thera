@@ -22,7 +22,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useAuthStore } from '@/stores/authStore';
 import { usePainStore } from '@/stores/painStore';
 import { getTodayPainLog, getPainLogs } from '@/services/painLogs';
-import { getUserBehavior } from '@/services/exercises';
+import { getUserBehavior, getWorkoutHistory } from '@/services/exercises';
 import { getHealthTips, getNutritionTips } from '@/services/dailyContent';
 import { getTodayWater, incrementWater } from '@/services/water';
 import { api } from '@/services/api';
@@ -75,8 +75,10 @@ export default function HomeScreen() {
   const [dailyNutrition, setDailyNutrition] = useState('Uống đủ nước và ăn nhiều rau xanh!');
   const [motivationIndex, setMotivationIndex] = useState(0);
   const [showPainAnalysis, setShowPainAnalysis] = useState(false);
+  const [showHealthScoreChart, setShowHealthScoreChart] = useState(false);
   const [painAnalysisData, setPainAnalysisData] = useState<any>(null);
   const [deviceRecommendation, setDeviceRecommendation] = useState<any>(null);
+  const [workoutHistory, setWorkoutHistory] = useState<any[]>([]);
   const [waterCups, setWaterCups] = useState(2);
   const [waterGoal, setWaterGoal] = useState(8);
 
@@ -191,6 +193,15 @@ export default function HomeScreen() {
         console.log('Home: User behavior timeout/error, using defaults');
         setStreakDays(0);
         setHealthScore(50);
+      }
+
+      try {
+        const workoutHistoryPromise = getWorkoutHistory(user.id, 30);
+        const history = await Promise.race([workoutHistoryPromise, timeout(2000)]) as any;
+        setWorkoutHistory(Array.isArray(history?.data) ? history.data : Array.isArray(history) ? history : []);
+      } catch (err) {
+        console.log('Home: Workout history timeout/error, skipping');
+        setWorkoutHistory([]);
       }
     } catch (error) {
       console.error('Load data error:', error);
@@ -486,6 +497,77 @@ export default function HomeScreen() {
     router.push('/water-tracking');
   };
 
+  const scoreTrendData = useMemo(() => {
+    const normalizeDate = (value: string | Date) => {
+      const date = new Date(value);
+      return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    };
+
+    const painMap = new Map<string, any>();
+    painHistory.forEach((log) => {
+      painMap.set(normalizeDate(log.date || log.created_at), log);
+    });
+
+    const completedLogs = workoutHistory.filter((log) => log?.is_completed);
+    const completedDates = completedLogs
+      .map((log) => normalizeDate(log.completed_at || log.started_at || log.created_at))
+      .sort();
+
+    const completedDateSet = new Set(completedDates);
+
+    const labels: string[] = [];
+    const data: number[] = [];
+    let lastKnownPainLevel = todayPainLog?.pain_level ?? 5;
+
+    for (let offset = 6; offset >= 0; offset -= 1) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - offset);
+      const key = normalizeDate(date);
+
+      const painLog = painMap.get(key);
+      if (painLog?.pain_level !== undefined) {
+        lastKnownPainLevel = painLog.pain_level;
+      }
+
+      let streakAtDate = 0;
+      const cursor = new Date(date);
+      while (completedDateSet.has(normalizeDate(cursor))) {
+        streakAtDate += 1;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+
+      const totalCompletedUntilDate = completedDates.filter((d) => d <= key).length;
+
+      const painScore = (10 - lastKnownPainLevel) * 0.5;
+      const streakScore = Math.min(streakAtDate, 30) * 0.3;
+      const completionRate = totalCompletedUntilDate > 0 ? Math.min(totalCompletedUntilDate / 30, 1) : 0;
+      const completionScore = completionRate * 10 * 0.2;
+      const score = Math.min(Math.round((painScore + streakScore + completionScore) * 10), 100);
+
+      labels.push(offset === 0 ? 'Nay' : `${offset}d`);
+      data.push(score);
+    }
+
+    const normalizedData =
+      data.every((value) => value === 50) && healthScore !== 50
+        ? [...data.slice(0, -1), healthScore]
+        : data;
+
+    const average =
+      normalizedData.length > 0
+        ? Math.round(normalizedData.reduce((sum, value) => sum + value, 0) / normalizedData.length)
+        : 0;
+    const highest = normalizedData.length > 0 ? Math.max(...normalizedData) : 0;
+
+    return { labels, data: normalizedData, average, highest };
+  }, [painHistory, workoutHistory, todayPainLog, healthScore]);
+
+  const handleHealthScorePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowHealthScoreChart(true);
+  };
+
   const progressStyle = useAnimatedStyle(() => {
     return {
       width: `${interpolate(scoreProgress.value, [0, 1], [0, 100])}%`,
@@ -547,48 +629,50 @@ export default function HomeScreen() {
 
       {/* Health Score Card */}
       <Animated.View entering={FadeInDown.delay(300)}>
-        <LinearGradient
-          colors={['#5B9BD5', '#4A7FB8']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.scoreCard}
-        >
-          <View style={styles.scoreHeader}>
-            <Heart size={24} color="#FFF" />
-            <Text style={styles.scoreTitle}>Điểm sức khỏe</Text>
-          </View>
-          
-          <View style={styles.scoreContent}>
-            <Animated.Text style={styles.scoreValue}>
-              {Math.round(scoreNumber.value)}
-            </Animated.Text>
-            <Text style={styles.scoreMax}>/100</Text>
-          </View>
+        <TouchableOpacity activeOpacity={0.9} onPress={handleHealthScorePress}>
+          <LinearGradient
+            colors={['#5B9BD5', '#4A7FB8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.scoreCard}
+          >
+            <View style={styles.scoreHeader}>
+              <Heart size={24} color="#FFF" />
+              <Text style={styles.scoreTitle}>Điểm sức khỏe</Text>
+            </View>
+            
+            <View style={styles.scoreContent}>
+              <Animated.Text style={styles.scoreValue}>
+                {Math.round(scoreNumber.value)}
+              </Animated.Text>
+              <Text style={styles.scoreMax}>/100</Text>
+            </View>
 
-          <View style={styles.progressBar}>
-            <Animated.View style={[styles.progressFill, progressStyle]}>
-              <LinearGradient
-                colors={['#10B981', '#34D399']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.progressGradient}
-              />
-            </Animated.View>
-          </View>
+            <View style={styles.progressBar}>
+              <Animated.View style={[styles.progressFill, progressStyle]}>
+                <LinearGradient
+                  colors={['#10B981', '#34D399']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.progressGradient}
+                />
+              </Animated.View>
+            </View>
 
-          <View style={styles.scoreFooter}>
-            <TrendingUp size={16} color="#FFFFFF" />
-            <Animated.View
-              key={motivationIndex}
-              entering={FadeInUp.duration(400)}
-              exiting={FadeOutUp.duration(400)}
-            >
-              <Text style={styles.scoreFooterText}>
-                {healthScore >= 70 ? 'Tuyệt vời!' : motivationMessages[motivationIndex]}
-              </Text>
-            </Animated.View>
-          </View>
-        </LinearGradient>
+            <View style={styles.scoreFooter}>
+              <TrendingUp size={16} color="#FFFFFF" />
+              <Animated.View
+                key={motivationIndex}
+                entering={FadeInUp.duration(400)}
+                exiting={FadeOutUp.duration(400)}
+              >
+                <Text style={styles.scoreFooterText}>
+                  {healthScore >= 70 ? 'Tuyệt vời!' : motivationMessages[motivationIndex]}
+                </Text>
+              </Animated.View>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
       </Animated.View>
 
       {/* Quick Stats */}
@@ -888,6 +972,114 @@ export default function HomeScreen() {
                 )}
               </>
             )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+
+    <Modal
+      visible={showHealthScoreChart}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowHealthScoreChart(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Biểu đồ điểm sức khỏe</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowHealthScoreChart(false);
+                }}
+                style={styles.closeButton}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.comparisonCard}>
+              <Text style={styles.comparisonTitle}>Tổng quan 7 ngày</Text>
+              <View style={styles.comparisonRow}>
+                <View style={styles.weekCard}>
+                  <Text style={styles.weekLabel}>Hiện tại</Text>
+                  <View style={styles.weekValueContainer}>
+                    <Text style={styles.weekValue}>{healthScore}</Text>
+                    <Text style={styles.weekMax}>/100</Text>
+                  </View>
+                </View>
+
+                <View style={styles.trendIconContainer}>
+                  <View style={[styles.trendBadge, { backgroundColor: '#60A5FA' }]}>
+                    <Heart size={22} color="#FFF" />
+                  </View>
+                </View>
+
+                <View style={styles.weekCard}>
+                  <Text style={styles.weekLabel}>Cao nhất</Text>
+                  <View style={styles.weekValueContainer}>
+                    <Text style={styles.weekValue}>{scoreTrendData.highest}</Text>
+                    <Text style={styles.weekMax}>/100</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.diffBadge, { backgroundColor: isDark ? '#1E3A5F' : '#DBEAFE' }]}>
+                <Text style={[styles.diffText, { color: isDark ? '#93C5FD' : '#2563EB' }]}>
+                  Trung bình 7 ngày: {scoreTrendData.average}/100
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.chartSection}>
+              <Text style={styles.sectionTitle}>Xu hướng điểm sức khỏe</Text>
+              <LineChart
+                data={{
+                  labels: scoreTrendData.labels,
+                  datasets: [
+                    {
+                      data: scoreTrendData.data,
+                      color: (opacity = 1) =>
+                        isDark ? `rgba(125, 179, 224, ${opacity})` : `rgba(91, 155, 213, ${opacity})`,
+                      strokeWidth: 3,
+                    },
+                  ],
+                }}
+                width={width - 80}
+                height={240}
+                yAxisSuffix=""
+                fromZero
+                yLabelsOffset={8}
+                chartConfig={{
+                  backgroundColor: colors.surface,
+                  backgroundGradientFrom: colors.surface,
+                  backgroundGradientTo: colors.surface,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) =>
+                    isDark ? `rgba(125, 179, 224, ${opacity})` : `rgba(91, 155, 213, ${opacity})`,
+                  labelColor: (opacity = 1) =>
+                    isDark ? `rgba(255, 255, 255, ${opacity * 0.72})` : `rgba(0, 0, 0, ${opacity * 0.6})`,
+                  propsForDots: {
+                    r: '6',
+                    strokeWidth: '2',
+                    stroke: colors.primary,
+                  },
+                  propsForBackgroundLines: {
+                    stroke: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(148, 163, 184, 0.25)',
+                  },
+                }}
+                bezier
+                style={styles.lineChart}
+              />
+            </View>
+
+            <View style={styles.insightCard}>
+              <Text style={styles.insightTitle}>Cách tính điểm</Text>
+              <Text style={styles.insightText}>
+                Điểm sức khỏe được suy ra từ mức đau, streak tập luyện và tỷ lệ hoàn thành bài tập. Đau giảm, tập đều và hoàn thành tốt thì đường biểu đồ sẽ đi lên.
+              </Text>
+            </View>
           </ScrollView>
         </View>
       </View>

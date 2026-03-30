@@ -22,6 +22,11 @@ export default function SpecialOfferScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      if (!user || user.id === 'guest') {
+        router.replace('/(auth)/login');
+        return;
+      }
+
       if (user) {
         await persistOnboardingProfile();
       }
