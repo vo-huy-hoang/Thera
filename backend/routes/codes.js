@@ -98,4 +98,37 @@ router.post('/activate', protect, async (req, res) => {
   }
 });
 
+// POST /api/codes/validate - Check if a product instance code is already activated and can be claimed after login
+router.post('/validate', async (req, res) => {
+  try {
+    const code = typeof req.body.code === 'string' ? req.body.code.trim().toUpperCase() : '';
+    if (!code) {
+      return res.status(400).json({ error: 'Thiếu mã kích hoạt' });
+    }
+
+    const productInstance = await ProductInstance.findOne({
+      activation_code: code,
+      is_activated: true,
+    }).populate('product_id');
+
+    if (!productInstance) {
+      return res.status(400).json({ error: 'Mã không hợp lệ hoặc chưa được kích hoạt' });
+    }
+
+    const product = productInstance.product_id;
+
+    res.json({
+      valid: true,
+      code,
+      product: {
+        key: product?.key || '',
+        name: product?.name || '',
+      },
+    });
+  } catch (error) {
+    console.error('Validate activation code error:', error);
+    res.status(500).json({ error: 'Lỗi server' });
+  }
+});
+
 module.exports = router;

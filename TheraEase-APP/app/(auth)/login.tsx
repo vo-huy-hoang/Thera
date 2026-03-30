@@ -3,7 +3,7 @@ import { View, StyleSheet, Dimensions, ImageBackground, Alert, Platform } from '
 import { Text, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Svg, Path } from 'react-native-svg';
 import AuthLoadingModal from '@/components/AuthLoadingModal';
 import Animated, {
@@ -96,6 +96,7 @@ function TypewriterText() {
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ activationCode?: string }>();
   const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('Đang kết nối với Google...');
@@ -111,6 +112,10 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!user) return;
+
+    if (user.id === 'guest') {
+      return;
+    }
 
     if (user.onboarding_completed) {
       router.replace('/(tabs)/home');
@@ -163,11 +168,69 @@ export default function LoginScreen() {
         throw new Error('Không nhận được dữ liệu người dùng từ server');
       }
 
-      useAuthStore.getState().setUser(data.user);
+      const draftUser = useAuthStore.getState().user;
+      const isGuestDraft = draftUser?.id === 'guest';
+
+      const mergedUser = isGuestDraft
+        ? {
+            ...data.user,
+            full_name: draftUser.full_name || data.user.full_name,
+            age: draftUser.age || data.user.age,
+            occupation: draftUser.occupation || data.user.occupation,
+            gender: draftUser.gender || data.user.gender,
+            height: draftUser.height || data.user.height,
+            weight: draftUser.weight || data.user.weight,
+            target_weight: draftUser.target_weight || data.user.target_weight,
+            primary_goal: draftUser.primary_goal || data.user.primary_goal,
+            focus_area: draftUser.focus_area || data.user.focus_area,
+            limitations: draftUser.limitations || data.user.limitations,
+            diet_type: draftUser.diet_type || data.user.diet_type,
+            pain_areas:
+              draftUser.pain_areas && draftUser.pain_areas.length > 0
+                ? draftUser.pain_areas
+                : data.user.pain_areas,
+            symptoms:
+              draftUser.symptoms && draftUser.symptoms.length > 0
+                ? draftUser.symptoms
+                : data.user.symptoms,
+            surgery_history: draftUser.surgery_history || data.user.surgery_history,
+            preferred_time: draftUser.preferred_time || data.user.preferred_time,
+            owned_devices:
+              draftUser.owned_devices && draftUser.owned_devices.length > 0
+                ? draftUser.owned_devices
+                : data.user.owned_devices,
+          }
+        : data.user;
+
+      useAuthStore.getState().setUser(mergedUser);
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       setAuthMessage('Đăng nhập thành công!');
+
+      if (isGuestDraft) {
+        setAuthMessage('Đang lưu lộ trình của bạn...');
+        const { persistOnboardingProfile } = await import('@/services/onboardingProfile');
+        const savedUser = await persistOnboardingProfile();
+
+        if (params.activationCode) {
+          setAuthMessage('Đang liên kết thiết bị...');
+          const response = await (await import('@/services/api')).api.post('/codes/activate', {
+            code: params.activationCode,
+          });
+          if (response?.user) {
+            useAuthStore.getState().setUser(response.user);
+          } else if (savedUser) {
+            useAuthStore.getState().setUser(savedUser);
+          }
+        } else if (savedUser) {
+          useAuthStore.getState().setUser(savedUser);
+        }
+
+        router.replace('/(tabs)/home');
+        return;
+      }
+
       if (data.user.onboarding_completed) {
         router.replace('/(tabs)/home');
       } else {

@@ -1,33 +1,36 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Image } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useAuthStore } from '@/stores/authStore';
 import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
-import { User } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
 
+const HERO_PORTRAIT = 'https://randomuser.me/api/portraits/men/32.jpg';
+
 export default function DiscoveryScreen() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
 
   const handleNext = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.replace('/(auth)/reviews');
   };
 
-  const Avatar = ({ size, color, delay }: { size: number, color: string, delay: number }) => (
+  const Portrait = ({ size, delay, uri }: { size: number; delay: number; uri: string }) => (
     <Animated.View 
       entering={ZoomIn.delay(delay).duration(600).springify()}
       style={[
         styles.avatarCircle, 
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: color }
+        { width: size, height: size, borderRadius: size / 2 }
       ]}
     >
-      <User size={size * 0.6} color="#FFFFFF" strokeWidth={2} />
+      <Image
+        source={{ uri }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
+        resizeMode="cover"
+      />
     </Animated.View>
   );
 
@@ -43,33 +46,7 @@ export default function DiscoveryScreen() {
 
         {/* Avatar Graphic Section */}
         <View style={styles.graphicContainer}>
-           <View style={styles.centerRow}>
-              <Avatar size={45} color="#93C5FD" delay={300} />
-              <View style={{ width: 10 }} />
-              <Avatar size={70} color="#60A5FA" delay={200} />
-              <View style={{ width: 10 }} />
-              <Avatar size={45} color="#93C5FD" delay={350} />
-           </View>
-
-           <View style={styles.mainRow}>
-              <Avatar size={40} color="#BFDBFE" delay={500} />
-              <View style={{ width: 15 }} />
-              <Avatar size={65} color="#3B82F6" delay={400} />
-              <View style={{ width: 15 }} />
-              <Avatar size={100} color="#2563EB" delay={100} />
-              <View style={{ width: 15 }} />
-              <Avatar size={65} color="#3B82F6" delay={450} />
-              <View style={{ width: 15 }} />
-              <Avatar size={40} color="#BFDBFE" delay={550} />
-           </View>
-
-           <View style={styles.centerRow}>
-              <Avatar size={45} color="#93C5FD" delay={600} />
-              <View style={{ width: 10 }} />
-              <Avatar size={70} color="#60A5FA" delay={650} />
-              <View style={{ width: 10 }} />
-              <Avatar size={45} color="#93C5FD" delay={700} />
-           </View>
+          <Portrait size={176} uri={HERO_PORTRAIT} delay={180} />
         </View>
 
         <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.textSection}>
@@ -115,27 +92,22 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   graphicContainer: {
-    height: 300,
+    height: 240,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarCircle: {
-    justifyContent: 'center',
-    alignItems: 'center',
     overflow: 'hidden',
-  },
-  centerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  mainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    shadowColor: '#1D4ED8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
   textSection: {
-    marginTop: 20,
+    marginTop: 8,
     paddingHorizontal: 10,
   },
   description: {

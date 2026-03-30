@@ -34,6 +34,36 @@ interface User {
   created_at: string;
 }
 
+export function createGuestUser(): User {
+  const now = new Date().toISOString();
+
+  return {
+    id: 'guest',
+    email: '',
+    full_name: '',
+    avatar_url: '',
+    role: 'user',
+    is_pro: false,
+    age: 0,
+    occupation: '',
+    gender: '',
+    height: '',
+    weight: '',
+    target_weight: '',
+    primary_goal: '',
+    focus_area: '',
+    limitations: '',
+    diet_type: '',
+    pain_areas: [],
+    symptoms: [],
+    surgery_history: '',
+    preferred_time: '20:00',
+    onboarding_completed: false,
+    owned_devices: [],
+    created_at: now,
+  };
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
