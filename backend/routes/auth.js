@@ -14,6 +14,36 @@ const GOOGLE_AUDIENCES = [
   process.env.GOOGLE_IOS_CLIENT_ID,
 ].filter(Boolean);
 
+function serializeUser(user) {
+  return {
+    id: user._id,
+    email: user.email,
+    full_name: user.full_name,
+    avatar_url: user.avatar_url,
+    role: user.role,
+    is_pro: user.is_pro,
+    age: user.age,
+    occupation: user.occupation,
+    gender: user.gender,
+    height: user.height,
+    weight: user.weight,
+    target_weight: user.target_weight,
+    primary_goal: user.primary_goal,
+    focus_area: user.focus_area,
+    limitations: user.limitations,
+    diet_type: user.diet_type,
+    pain_areas: user.pain_areas,
+    symptoms: user.symptoms,
+    surgery_history: user.surgery_history,
+    preferred_time: user.preferred_time,
+    personalized_plan_started_at: user.personalized_plan_started_at,
+    personalized_plan_unlock_at: user.personalized_plan_unlock_at,
+    onboarding_completed: user.onboarding_completed,
+    owned_devices: user.owned_devices,
+    created_at: user.created_at,
+  };
+}
+
 // POST /api/auth/admin-login - Admin email/password login
 router.post('/admin-login', async (req, res) => {
   try {
@@ -108,37 +138,64 @@ router.post('/google', async (req, res) => {
 
     res.json({
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        full_name: user.full_name,
-        avatar_url: user.avatar_url,
-        role: user.role,
-        is_pro: user.is_pro,
-        age: user.age,
-        occupation: user.occupation,
-        gender: user.gender,
-        height: user.height,
-        weight: user.weight,
-        target_weight: user.target_weight,
-        primary_goal: user.primary_goal,
-        focus_area: user.focus_area,
-        limitations: user.limitations,
-        diet_type: user.diet_type,
-        pain_areas: user.pain_areas,
-        symptoms: user.symptoms,
-        surgery_history: user.surgery_history,
-        preferred_time: user.preferred_time,
-        personalized_plan_started_at: user.personalized_plan_started_at,
-        personalized_plan_unlock_at: user.personalized_plan_unlock_at,
-        onboarding_completed: user.onboarding_completed,
-        owned_devices: user.owned_devices,
-        created_at: user.created_at,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(401).json({ error: 'Google authentication failed' });
+  }
+});
+
+// POST /api/auth/facebook - Facebook Sign-In (mobile app)
+router.post('/facebook', async (req, res) => {
+  try {
+    const accessToken = typeof req.body.accessToken === 'string' ? req.body.accessToken.trim() : '';
+
+    if (!accessToken) {
+      return res.status(400).json({ error: 'accessToken là bắt buộc' });
+    }
+
+    const profileResponse = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(accessToken)}`
+    );
+
+    const profileData = await profileResponse.json();
+
+    if (!profileResponse.ok || profileData?.error || !profileData?.id) {
+      return res.status(401).json({ error: 'Facebook token không hợp lệ' });
+    }
+
+    const facebookId = profileData.id;
+    const email = profileData.email || `facebook_${facebookId}@noemail.theraease.local`;
+    const name = profileData.name || '';
+    const picture = profileData.picture?.data?.url || '';
+
+    let user = await User.findOne({ $or: [{ facebookId }, { email }] });
+
+    if (user) {
+      if (!user.facebookId) user.facebookId = facebookId;
+      if (picture) user.avatar_url = picture;
+      if (name && !user.full_name) user.full_name = name;
+      await user.save();
+    } else {
+      user = await User.create({
+        facebookId,
+        email,
+        full_name: name,
+        avatar_url: picture,
+        role: 'user',
+      });
+    }
+
+    const token = generateToken(user._id, user.role);
+
+    res.json({
+      token,
+      user: serializeUser(user),
+    });
+  } catch (error) {
+    console.error('Facebook auth error:', error);
+    res.status(401).json({ error: 'Facebook authentication failed' });
   }
 });
 

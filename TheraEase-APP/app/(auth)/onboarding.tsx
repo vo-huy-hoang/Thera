@@ -187,16 +187,15 @@ export default function OnboardingScreen() {
       console.log('Onboarding: Email from storage:', email);
 
       // Lưu vào local store ngay lập tức
-      const userProfile = {
-        id: user?.id || 'guest',
-        email: email || '',
-        avatar_url: user?.avatar_url || '',
-        role: user?.role || 'user',
-        onboarding_completed: true,
-        owned_devices: user?.owned_devices || [],
-        ...profileData,
-        created_at: new Date().toISOString(),
-      };
+	      const userProfile = {
+	        id: user?.id || 'guest',
+	        email: email || '',
+	        avatar_url: user?.avatar_url || '',
+	        role: user?.role || 'user',
+	        owned_devices: user?.owned_devices || [],
+	        ...profileData,
+	        created_at: new Date().toISOString(),
+	      };
       
       setUser(userProfile);
       console.log('Onboarding: Saved to local store with ID:', userProfile.id);

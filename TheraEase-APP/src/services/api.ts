@@ -1,7 +1,45 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-// Use your deployed backend URL here when deploying
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
+function getDevServerHost() {
+  const possibleHostUris = [
+    Constants.expoConfig?.hostUri,
+    (Constants as any).expoGoConfig?.debuggerHost,
+    (Constants as any).manifest?.debuggerHost,
+    Constants.platform?.hostUri,
+  ].filter(Boolean) as string[];
+
+  for (const hostUri of possibleHostUris) {
+    const host = hostUri.split(':')[0]?.trim();
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      return host;
+    }
+  }
+
+  return null;
+}
+
+function resolveApiBase() {
+  const fallbackBase = 'http://localhost:5001/api';
+  const configuredBase = process.env.EXPO_PUBLIC_API_URL?.trim() || fallbackBase;
+
+  try {
+    const parsed = new URL(configuredBase);
+    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+      const devHost = getDevServerHost();
+      if (devHost) {
+        parsed.hostname = devHost;
+        return parsed.toString().replace(/\/$/, '');
+      }
+    }
+  } catch (error) {
+    console.warn('Resolve API base error:', error);
+  }
+
+  return configuredBase;
+}
+
+const API_BASE = resolveApiBase();
 
 const TOKEN_KEY = 'theraease_token';
 const USER_KEY = 'theraease_user';
@@ -53,36 +91,56 @@ class ApiClient {
 
   async get<T = any>(endpoint: string): Promise<T> {
     const headers = await this.getHeaders();
-    const res = await fetch(`${API_BASE}${endpoint}`, { headers });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${endpoint}`, { headers });
+    } catch (error) {
+      throw new Error(`Không kết nối được tới backend tại ${API_BASE}. Hãy kiểm tra backend đang chạy và EXPO_PUBLIC_API_URL.`);
+    }
     return this.handleResponse<T>(res);
   }
 
   async post<T = any>(endpoint: string, data?: any): Promise<T> {
     const headers = await this.getHeaders();
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+      });
+    } catch (error) {
+      throw new Error(`Không kết nối được tới backend tại ${API_BASE}. Hãy kiểm tra backend đang chạy và EXPO_PUBLIC_API_URL.`);
+    }
     return this.handleResponse<T>(res);
   }
 
   async put<T = any>(endpoint: string, data?: any): Promise<T> {
     const headers = await this.getHeaders();
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'PUT',
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'PUT',
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+      });
+    } catch (error) {
+      throw new Error(`Không kết nối được tới backend tại ${API_BASE}. Hãy kiểm tra backend đang chạy và EXPO_PUBLIC_API_URL.`);
+    }
     return this.handleResponse<T>(res);
   }
 
   async delete<T = any>(endpoint: string): Promise<T> {
     const headers = await this.getHeaders();
-    const res = await fetch(`${API_BASE}${endpoint}`, {
-      method: 'DELETE',
-      headers,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'DELETE',
+        headers,
+      });
+    } catch (error) {
+      throw new Error(`Không kết nối được tới backend tại ${API_BASE}. Hãy kiểm tra backend đang chạy và EXPO_PUBLIC_API_URL.`);
+    }
     return this.handleResponse<T>(res);
   }
 

@@ -10,6 +10,7 @@ import {
 import { Text, Button } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Svg, Path } from "react-native-svg";
 import AuthLoadingModal from "@/components/AuthLoadingModal";
@@ -25,8 +26,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useAuthStore } from "@/stores/authStore";
 
+import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -39,6 +42,25 @@ const messages = [
 	"Bác sĩ trị liệu trong túi",
 	"Lộ trình dành riêng cho bạn",
 ];
+
+const FACEBOOK_APP_ID =
+	process.env.EXPO_PUBLIC_FACEBOOK_APP_ID || "34694532530194658";
+const FACEBOOK_PERMISSIONS = ["public_profile", "email"];
+const IS_EXPO_GO =
+	Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const EXPO_PROJECT_OWNER = Constants.expoConfig?.owner || "vohuyhoang";
+const EXPO_PROJECT_SLUG = Constants.expoConfig?.slug || "theraease-app";
+const EXPO_PROJECT_FULL_NAME = `@${EXPO_PROJECT_OWNER}/${EXPO_PROJECT_SLUG}`;
+const FACEBOOK_REDIRECT_URI = (() => {
+	if (IS_EXPO_GO && Platform.OS !== "web") {
+		return `https://auth.expo.io/${EXPO_PROJECT_FULL_NAME}`;
+	}
+
+	return AuthSession.makeRedirectUri({
+		path: "authorize",
+		native: `fb${FACEBOOK_APP_ID}://authorize`,
+	});
+})();
 
 function TypewriterText() {
 	const [displayText, setDisplayText] = useState("");
@@ -125,6 +147,18 @@ export default function LoginScreen() {
 			: {}),
 	});
 
+	const [facebookRequest, facebookResponse, promptFacebookAsync] =
+		Facebook.useAuthRequest({
+			clientId: FACEBOOK_APP_ID,
+			iosClientId: FACEBOOK_APP_ID,
+			androidClientId: FACEBOOK_APP_ID,
+			webClientId: FACEBOOK_APP_ID,
+			responseType: AuthSession.ResponseType.Token,
+			usePKCE: false,
+			scopes: FACEBOOK_PERMISSIONS,
+			redirectUri: FACEBOOK_REDIRECT_URI,
+		});
+
 	useEffect(() => {
 		if (!user) return;
 
@@ -172,90 +206,133 @@ export default function LoginScreen() {
 		}
 	}, [response]);
 
+	useEffect(() => {
+		if (!facebookResponse) return;
+
+		if (facebookResponse.type === "success") {
+			const accessToken =
+				(facebookResponse.authentication as any)?.accessToken ||
+				(facebookResponse.params as any)?.access_token;
+
+			if (!accessToken) {
+				setLoading(false);
+				Alert.alert(
+					"Đăng nhập Facebook thất bại",
+					"Không lấy được access token từ Facebook",
+				);
+				return;
+			}
+
+			void handleTokenFromFacebook(accessToken);
+			return;
+		}
+
+		if (facebookResponse.type === "error") {
+			setLoading(false);
+			const details =
+				facebookResponse.error?.message ||
+				(facebookResponse.params as any)?.error_description ||
+				(facebookResponse.params as any)?.error ||
+				"Facebook OAuth bị lỗi";
+			Alert.alert("Đăng nhập Facebook thất bại", details);
+			return;
+		}
+
+		if (
+			facebookResponse.type === "dismiss" ||
+			facebookResponse.type === "cancel"
+		) {
+			setLoading(false);
+		}
+	}, [facebookResponse]);
+
+	const handleAuthSuccess = async (dataUser: any) => {
+		if (!dataUser) {
+			throw new Error("Không nhận được dữ liệu người dùng từ server");
+		}
+
+		const draftUser = useAuthStore.getState().user;
+		const isGuestDraft = draftUser?.id === "guest";
+
+		const mergedUser = isGuestDraft
+			? {
+					...dataUser,
+					full_name: draftUser.full_name || dataUser.full_name,
+					age: draftUser.age || dataUser.age,
+					occupation: draftUser.occupation || dataUser.occupation,
+					gender: draftUser.gender || dataUser.gender,
+					height: draftUser.height || dataUser.height,
+					weight: draftUser.weight || dataUser.weight,
+					target_weight: draftUser.target_weight || dataUser.target_weight,
+					primary_goal: draftUser.primary_goal || dataUser.primary_goal,
+					focus_area: draftUser.focus_area || dataUser.focus_area,
+					limitations: draftUser.limitations || dataUser.limitations,
+					diet_type: draftUser.diet_type || dataUser.diet_type,
+					pain_areas:
+						draftUser.pain_areas && draftUser.pain_areas.length > 0
+							? draftUser.pain_areas
+							: dataUser.pain_areas,
+					symptoms:
+						draftUser.symptoms && draftUser.symptoms.length > 0
+							? draftUser.symptoms
+							: dataUser.symptoms,
+					surgery_history:
+						draftUser.surgery_history || dataUser.surgery_history,
+					preferred_time: draftUser.preferred_time || dataUser.preferred_time,
+					owned_devices:
+						draftUser.owned_devices && draftUser.owned_devices.length > 0
+							? draftUser.owned_devices
+							: dataUser.owned_devices,
+				}
+			: dataUser;
+
+		useAuthStore.getState().setUser(mergedUser);
+
+		await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+		setAuthMessage("Đăng nhập thành công!");
+
+		if (isGuestDraft) {
+			setAuthMessage("Đang lưu lộ trình của bạn...");
+			const { persistOnboardingProfile } = await import(
+				"@/services/onboardingProfile"
+			);
+			const savedUser = await persistOnboardingProfile();
+
+			if (params.activationCode) {
+				setAuthMessage("Đang liên kết thiết bị...");
+				const response = await (await import("@/services/api")).api.post(
+					"/codes/activate",
+					{
+						code: params.activationCode,
+					},
+				);
+				if (response?.user) {
+					useAuthStore.getState().setUser(response.user);
+				} else if (savedUser) {
+					useAuthStore.getState().setUser(savedUser);
+				}
+			} else if (savedUser) {
+				useAuthStore.getState().setUser(savedUser);
+			}
+
+			router.replace("/(tabs)/home");
+			return;
+		}
+
+		if (dataUser.onboarding_completed) {
+			router.replace("/(tabs)/home");
+		} else {
+			router.replace("/(auth)/welcome");
+		}
+	};
+
 	const handleTokenFromGoogle = async (idToken: string) => {
 		try {
 			setAuthMessage("Đang đăng nhập...");
 
 			const { signInWithGoogleToken } = await import("@/services/auth");
 			const data = await signInWithGoogleToken(idToken);
-
-			if (!data?.user) {
-				throw new Error("Không nhận được dữ liệu người dùng từ server");
-			}
-
-			const draftUser = useAuthStore.getState().user;
-			const isGuestDraft = draftUser?.id === "guest";
-
-			const mergedUser = isGuestDraft
-				? {
-						...data.user,
-						full_name: draftUser.full_name || data.user.full_name,
-						age: draftUser.age || data.user.age,
-						occupation: draftUser.occupation || data.user.occupation,
-						gender: draftUser.gender || data.user.gender,
-						height: draftUser.height || data.user.height,
-						weight: draftUser.weight || data.user.weight,
-						target_weight: draftUser.target_weight || data.user.target_weight,
-						primary_goal: draftUser.primary_goal || data.user.primary_goal,
-						focus_area: draftUser.focus_area || data.user.focus_area,
-						limitations: draftUser.limitations || data.user.limitations,
-						diet_type: draftUser.diet_type || data.user.diet_type,
-						pain_areas:
-							draftUser.pain_areas && draftUser.pain_areas.length > 0
-								? draftUser.pain_areas
-								: data.user.pain_areas,
-						symptoms:
-							draftUser.symptoms && draftUser.symptoms.length > 0
-								? draftUser.symptoms
-								: data.user.symptoms,
-						surgery_history:
-							draftUser.surgery_history || data.user.surgery_history,
-						preferred_time:
-							draftUser.preferred_time || data.user.preferred_time,
-						owned_devices:
-							draftUser.owned_devices && draftUser.owned_devices.length > 0
-								? draftUser.owned_devices
-								: data.user.owned_devices,
-					}
-				: data.user;
-
-			useAuthStore.getState().setUser(mergedUser);
-
-			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-			setAuthMessage("Đăng nhập thành công!");
-
-			if (isGuestDraft) {
-				setAuthMessage("Đang lưu lộ trình của bạn...");
-				const { persistOnboardingProfile } =
-					await import("@/services/onboardingProfile");
-				const savedUser = await persistOnboardingProfile();
-
-				if (params.activationCode) {
-					setAuthMessage("Đang liên kết thiết bị...");
-					const response = await (
-						await import("@/services/api")
-					).api.post("/codes/activate", {
-						code: params.activationCode,
-					});
-					if (response?.user) {
-						useAuthStore.getState().setUser(response.user);
-					} else if (savedUser) {
-						useAuthStore.getState().setUser(savedUser);
-					}
-				} else if (savedUser) {
-					useAuthStore.getState().setUser(savedUser);
-				}
-
-				router.replace("/(tabs)/home");
-				return;
-			}
-
-			if (data.user.onboarding_completed) {
-				router.replace("/(tabs)/home");
-			} else {
-				router.replace("/(auth)/welcome");
-			}
+			await handleAuthSuccess(data.user);
 		} catch (error: any) {
 			console.error("Login error:", error);
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -276,6 +353,136 @@ export default function LoginScreen() {
 			setLoading(false);
 			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 			Alert.alert("Đăng nhập thất bại", error?.message || "Có lỗi xảy ra");
+		}
+	};
+
+	const handleTokenFromFacebook = async (accessToken: string) => {
+		try {
+			setAuthMessage("Đang đăng nhập với Facebook...");
+			const { signInWithFacebookToken } = await import("@/services/auth");
+			const data = await signInWithFacebookToken(accessToken);
+			await handleAuthSuccess(data.user);
+		} catch (error: any) {
+			console.error("Facebook login error:", error);
+			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+			Alert.alert(
+				"Đăng nhập Facebook thất bại",
+				error?.message || "Có lỗi xảy ra",
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleFacebookSignIn = async () => {
+		let delegatedToTokenHandler = false;
+
+		try {
+			setLoading(true);
+			setAuthMessage("Đang kết nối với Facebook...");
+			await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+			if (IS_EXPO_GO && Platform.OS !== "web") {
+				if (!facebookRequest?.url) {
+					throw new Error("Không thể khởi tạo Facebook OAuth");
+				}
+
+				const returnUrl = AuthSession.getDefaultReturnUrl();
+				const proxyUrl = `https://auth.expo.io/${EXPO_PROJECT_FULL_NAME}/start?${new URLSearchParams(
+					{
+						authUrl: facebookRequest.url,
+						returnUrl,
+					},
+				).toString()}`;
+
+				const result = await WebBrowser.openAuthSessionAsync(
+					proxyUrl,
+					returnUrl,
+				);
+
+				if (result.type === "success") {
+					const parsed = facebookRequest.parseReturnUrl(result.url);
+
+					if (parsed.type !== "success") {
+						const details =
+							parsed.type === "error"
+								? parsed.error?.message ||
+									(parsed.params as any)?.error_description ||
+									(parsed.params as any)?.error ||
+									"Facebook OAuth bị lỗi"
+								: "Facebook OAuth bị lỗi";
+						throw new Error(details);
+					}
+
+					const accessToken =
+						(parsed.authentication as any)?.accessToken ||
+						(parsed.params as any)?.access_token;
+
+					if (!accessToken) {
+						throw new Error("Không lấy được access token từ Facebook");
+					}
+
+					delegatedToTokenHandler = true;
+					await handleTokenFromFacebook(accessToken);
+					return;
+				}
+
+				if (result.type === "cancel" || result.type === "dismiss") {
+					return;
+				}
+
+				throw new Error("Không thể hoàn tất đăng nhập Facebook");
+			}
+
+			if (Platform.OS !== "web" && !IS_EXPO_GO) {
+				const { Settings, LoginManager, AccessToken } = await import(
+					"react-native-fbsdk-next"
+				);
+
+				Settings.initializeSDK();
+
+				// Use the native Facebook SDK on iOS/Android to avoid Safari OAuth
+				// redirect issues and keep the access-token exchange in our backend.
+				const loginResult =
+					Platform.OS === "ios"
+						? await LoginManager.logInWithPermissions(
+								FACEBOOK_PERMISSIONS,
+								"enabled",
+							)
+						: await LoginManager.logInWithPermissions(FACEBOOK_PERMISSIONS);
+
+				if (loginResult.isCancelled) {
+					return;
+				}
+
+				const token = await AccessToken.getCurrentAccessToken();
+				const accessToken = token?.accessToken;
+
+				if (!accessToken) {
+					throw new Error("Không lấy được access token từ Facebook");
+				}
+
+				delegatedToTokenHandler = true;
+				await handleTokenFromFacebook(accessToken);
+				return;
+			}
+
+			if (!facebookRequest) {
+				throw new Error("Không thể khởi tạo Facebook OAuth");
+			}
+
+			await promptFacebookAsync();
+		} catch (error: any) {
+			console.error("Facebook login error:", error);
+			await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+			Alert.alert(
+				"Đăng nhập Facebook thất bại",
+				error?.message || "Có lỗi xảy ra",
+			);
+		} finally {
+			if (!delegatedToTokenHandler) {
+				setLoading(false);
+			}
 		}
 	};
 
@@ -348,6 +555,27 @@ export default function LoginScreen() {
 								)}
 							>
 								Đăng nhập với Google
+							</Button>
+
+							<Button
+								mode="contained"
+								onPress={handleFacebookSignIn}
+								loading={loading && authMessage.includes("Facebook")}
+								disabled={loading || (Platform.OS === "web" && !facebookRequest)}
+								style={styles.button}
+								contentStyle={styles.buttonContent}
+								buttonColor="#1877F2"
+								textColor="#FFFFFF"
+								icon={() => (
+									<Svg width="20" height="20" viewBox="0 0 24 24">
+										<Path
+											fill="#FFFFFF"
+											d="M13.5 22v-8.2h2.8l.4-3.2h-3.2V8.57c0-.93.26-1.56 1.6-1.56H16.8V4.15c-.3-.04-1.32-.13-2.5-.13-2.47 0-4.16 1.5-4.16 4.28v2.38H7.4v3.2h2.74V22h3.36Z"
+										/>
+									</Svg>
+								)}
+							>
+								Đăng nhập với Facebook
 							</Button>
 
 							<View style={styles.termsContainer}>

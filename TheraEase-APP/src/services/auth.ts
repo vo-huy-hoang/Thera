@@ -129,30 +129,48 @@
 
 import { api } from './api';
 
-type GoogleAuthResponse = {
+type SocialAuthResponse = {
   token: string;
   user: any;
 };
 
+async function completeSocialAuth(endpoint: string, payload: Record<string, any>): Promise<SocialAuthResponse> {
+  const data = await api.post(endpoint, payload);
+
+  if (!data?.token || !data?.user) {
+    throw new Error('Phản hồi đăng nhập từ server không hợp lệ');
+  }
+
+  await api.setToken(data.token);
+  await api.setUser(data.user);
+
+  return data;
+}
+
 // Gửi Google idToken lên backend để đổi lấy JWT của hệ thống
-export async function signInWithGoogleToken(idToken: string): Promise<GoogleAuthResponse> {
+export async function signInWithGoogleToken(idToken: string): Promise<SocialAuthResponse> {
   try {
     if (!idToken) {
       throw new Error('Thiếu Google idToken');
     }
 
-    const data = await api.post('/auth/google', { idToken });
-
-    if (!data?.token || !data?.user) {
-      throw new Error('Phản hồi đăng nhập từ server không hợp lệ');
-    }
-
-    await api.setToken(data.token);
-    await api.setUser(data.user);
-
-    return data;
+    return await completeSocialAuth('/auth/google', { idToken });
   } catch (error) {
     console.error('Google auth error:', error);
+    throw error;
+  }
+}
+
+// Gửi Facebook accessToken lên backend để đổi lấy JWT của hệ thống
+export async function signInWithFacebookToken(accessToken: string): Promise<SocialAuthResponse> {
+  try {
+    if (!accessToken) {
+      throw new Error('Thiếu Facebook accessToken');
+    }
+
+    return await completeSocialAuth('/auth/facebook', { accessToken });
+  } catch (error) {
+    console.error('Facebook auth error:', error);
     throw error;
   }
 }

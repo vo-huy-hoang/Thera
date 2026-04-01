@@ -15,15 +15,15 @@ export default function Index() {
       setTimeout(() => {
         if (user) {
           if (user.id === 'guest') {
-            router.replace('/(auth)/welcome');
+            router.replace('/(auth)/start');
           } else if (user.onboarding_completed) {
             router.replace('/(tabs)/home');
           } else {
-            router.replace('/(auth)/welcome');
+            router.replace('/(auth)/start');
           }
         } else {
           setUser(createGuestUser());
-          router.replace('/(auth)/welcome');
+          router.replace('/(auth)/start');
         }
       }, 100);
     }

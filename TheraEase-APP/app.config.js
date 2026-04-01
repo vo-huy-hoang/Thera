@@ -1,6 +1,7 @@
 export default {
   expo: {
     name: "TheraEase",
+    owner: "vohuyhoang",
     slug: "theraease-app",
     version: "1.0.0",
     orientation: "portrait",
@@ -16,7 +17,11 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "vn.theraease.app"
+      bundleIdentifier: "vn.theraease.app",
+      infoPlist: {
+        NSUserTrackingUsageDescription: "Ứng dụng cần quyền này để cải thiện trải nghiệm của bạn",
+        "LSApplicationQueriesSchemes": ["https", "http","fbapi","fb-messenger-api","fbauth2","fbshareextension"]
+      }
     },
     android: {
       adaptiveIcon: {
@@ -46,9 +51,17 @@ export default {
         {
           cameraPermission: "Ứng dụng cần quyền camera để quét mã QR kích hoạt thiết bị"
         }
+      ],
+      // 🔥 THÊM FACEBOOK LOGIN Ở ĐÂY
+      [
+        "react-native-fbsdk-next",
+        {
+          appID: "34694532530194658",
+          displayName: "TheraEase"
+        }
       ]
     ],
-    scheme: "theraease",
+    scheme: ["theraease", "fb34694532530194658"],
     extra: {
       eas: {
         projectId: "your-project-id"

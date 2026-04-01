@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
 	{
 		// Google OAuth fields
 		googleId: { type: String, sparse: true },
+		facebookId: { type: String, sparse: true },
 		email: { type: String, required: true, unique: true },
 		full_name: { type: String, default: "" },
 		avatar_url: { type: String, default: "" },
@@ -24,6 +25,7 @@ const userSchema = new mongoose.Schema(
 		symptoms: [{ type: String }],
 		surgery_history: { type: String, default: "" },
 		preferred_time: { type: String, default: "08:00" },
+		onboarding_completed: { type: Boolean, default: false },
 		personalized_plan_started_at: { type: Date, default: null },
 		personalized_plan_unlock_at: { type: Date, default: null },
 
