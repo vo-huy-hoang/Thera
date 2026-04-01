@@ -154,7 +154,7 @@ export default function DeviceUsageScreen() {
               <CheckCircle2 size={48} color={colors.success} fill={colors.success} />
               <Text style={styles.completedTitle}>Tuyệt vời!</Text>
               <Text style={styles.completedText}>
-                Bạn đã hoàn thành phiên trị liệu với thiết bị
+                Bạn đã hoàn thành phiên cải thiện với thiết bị
               </Text>
             </View>
           </Animated.View>

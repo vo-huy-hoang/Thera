@@ -94,7 +94,7 @@ export default function NotificationSettingsScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.description}>
-          Chọn thời gian bạn muốn nhận nhắc nhở trị liệu hàng ngày
+          Chọn thời gian bạn muốn nhận nhắc nhở cải thiện hàng ngày
         </Text>
 
         <View style={styles.timeContainer}>

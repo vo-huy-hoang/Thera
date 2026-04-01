@@ -74,7 +74,7 @@ export default function WorkoutPlansScreen() {
 
   const buildPlanTitle = (plan: WorkoutPlan) => {
     if (selectedPainAreaLabel) {
-      return `Lộ trình trị liệu ${selectedPainAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`;
+      return `Lộ trình cải thiện ${selectedPainAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`;
     }
 
     return plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`);
@@ -136,7 +136,7 @@ export default function WorkoutPlansScreen() {
         >
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lộ trình trị liệu</Text>
+        <Text style={styles.headerTitle}>Lộ trình cải thiện</Text>
         <View style={styles.placeholder} />
       </View>
 

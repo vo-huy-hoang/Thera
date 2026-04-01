@@ -128,7 +128,7 @@ export default function DailyRecommendationsScreen() {
             <Sparkles size={32} color={colors.primary} />
             <Text style={styles.introTitle}>Hoàn thành xuất sắc!</Text>
             <Text style={styles.introText}>
-              Bạn đã hoàn thành phiên trị liệu hôm nay. Dưới đây là gợi ý cho ngày mai.
+              Bạn đã hoàn thành phiên trị cải thiện hôm nay. Dưới đây là gợi ý cho ngày mai.
             </Text>
           </View>
         </Animated.View>

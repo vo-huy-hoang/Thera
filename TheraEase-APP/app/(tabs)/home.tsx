@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [healthScore, setHealthScore] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
-  const [dailyTip, setDailyTip] = useState('Hãy duy trì trị liệu đều đặn mỗi ngày!');
+  const [dailyTip, setDailyTip] = useState('Hãy duy trì cải thiện đều đặn mỗi ngày!');
   const [dailyNutrition, setDailyNutrition] = useState('Uống đủ nước và ăn nhiều rau xanh!');
   const [motivationIndex, setMotivationIndex] = useState(0);
   const [showPainAnalysis, setShowPainAnalysis] = useState(false);
@@ -227,11 +227,11 @@ export default function HomeScreen() {
       try {
         const tipPromise = getHealthTips();
         const tip = await Promise.race([tipPromise, timeout(2000)]);
-        const tipText = Array.isArray(tip) && tip.length > 0 ? tip[0].content || tip[0].title || 'Hãy duy trì trị liệu đều đặn mỗi ngày!' : tip;
-        setDailyTip(typeof tipText === 'string' ? tipText : 'Hãy duy trì trị liệu đều đặn mỗi ngày!');
+        const tipText = Array.isArray(tip) && tip.length > 0 ? tip[0].content || tip[0].title || 'Hãy duy trì luyện tập đều đặn mỗi ngày!' : tip;
+        setDailyTip(typeof tipText === 'string' ? tipText : 'Hãy duy trì phục hồi đều đặn mỗi ngày!');
       } catch (err) {
         console.log('Home: Daily tip timeout, using default');
-        setDailyTip('Hãy duy trì trị liệu đều đặn mỗi ngày!');
+        setDailyTip('Hãy duy trì phục hồi đều đặn mỗi ngày!');
       }
 
       try {
@@ -399,22 +399,22 @@ export default function HomeScreen() {
       
       // Map vùng đau -> thiết bị
       const deviceMap: Record<string, { device: string; name: string; benefit: number }> = {
-        'neck': { device: 'neck_device', name: 'Thiết bị trị liệu cổ', benefit: 35 },
-        'shoulder_left': { device: 'shoulder_device', name: 'Thiết bị trị liệu vai', benefit: 30 },
-        'shoulder_right': { device: 'shoulder_device', name: 'Thiết bị trị liệu vai', benefit: 30 },
-        'upper_back': { device: 'back_device', name: 'Thiết bị trị liệu lưng', benefit: 40 },
-        'middle_back': { device: 'back_device', name: 'Thiết bị trị liệu lưng', benefit: 40 },
-        'lower_back': { device: 'back_device', name: 'Thiết bị trị liệu lưng', benefit: 40 },
-        'arm_left': { device: 'arm_device', name: 'Thiết bị trị liệu tay', benefit: 25 },
-        'arm_right': { device: 'arm_device', name: 'Thiết bị trị liệu tay', benefit: 25 },
-        'hand_left': { device: 'arm_device', name: 'Thiết bị trị liệu tay', benefit: 25 },
-        'hand_right': { device: 'arm_device', name: 'Thiết bị trị liệu tay', benefit: 25 },
-        'thigh_left': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
-        'thigh_right': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
-        'leg_left': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
-        'leg_right': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
-        'foot_left': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
-        'foot_right': { device: 'leg_device', name: 'Thiết bị trị liệu chân', benefit: 30 },
+        'neck': { device: 'neck_device', name: 'Thiết bị cải thiện cổ', benefit: 35 },
+        'shoulder_left': { device: 'shoulder_device', name: 'Thiết bị cải thiện vai', benefit: 30 },
+        'shoulder_right': { device: 'shoulder_device', name: 'Thiết bị cải thiện vai', benefit: 30 },
+        'upper_back': { device: 'back_device', name: 'Thiết bị cải thiện lưng', benefit: 40 },
+        'middle_back': { device: 'back_device', name: 'Thiết bị cải thiện lưng', benefit: 40 },
+        'lower_back': { device: 'back_device', name: 'Thiết bị cải thiện lưng', benefit: 40 },
+        'arm_left': { device: 'arm_device', name: 'Thiết bị cải thiện tay', benefit: 25 },
+        'arm_right': { device: 'arm_device', name: 'Thiết bị cải thiện tay', benefit: 25 },
+        'hand_left': { device: 'arm_device', name: 'Thiết bị cải thiện tay', benefit: 25 },
+        'hand_right': { device: 'arm_device', name: 'Thiết bị cải thiện tay', benefit: 25 },
+        'thigh_left': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
+        'thigh_right': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
+        'leg_left': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
+        'leg_right': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
+        'foot_left': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
+        'foot_right': { device: 'leg_device', name: 'Thiết bị cải thiện chân', benefit: 30 },
       };
       
       const recommendation = deviceMap[mostPainfulArea];
@@ -729,7 +729,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* CTA Button - Bắt đầu trị liệu */}
+      {/* CTA Button - Bắt đầu quá trình */}
       <Animated.View entering={FadeInDown.delay(500)}>
         <TouchableOpacity
           activeOpacity={personalizedPlanUnlocked ? 0.85 : 1}
@@ -929,10 +929,10 @@ export default function HomeScreen() {
                   <Text style={styles.insightTitle}>Nhận xét</Text>
                   <Text style={styles.insightText}>
                     {painAnalysisData.diff > 0.5
-                      ? `Tuyệt vời! Mức đau của bạn đã giảm ${Math.abs(painAnalysisData.diffPercent)}% so với tuần trước. Hãy tiếp tục duy trì trị liệu đều đặn!`
+                      ? `Tuyệt vời! Mức đau của bạn đã giảm ${Math.abs(painAnalysisData.diffPercent)}% so với tuần trước. Hãy tiếp tục duy trì luyện tập đều đặn!`
                       : painAnalysisData.diff < -0.5
                       ? `Mức đau tăng ${Math.abs(painAnalysisData.diffPercent)}% so với tuần trước. Hãy nghỉ ngơi hợp lý và tham khảo ý kiến bác sĩ nếu cần.`
-                      : 'Mức đau ổn định. Hãy tiếp tục theo dõi và duy trì thói quen trị liệu tốt!'}
+                      : 'Mức đau ổn định. Hãy tiếp tục theo dõi và duy trì thói quen luyện tập tốt!'}
                   </Text>
                 </View>
 

@@ -29,7 +29,7 @@ export default function ExploreScreen() {
 				<View style={styles.heroCard}>
 					<View style={styles.heroBadge}>
 						<Sparkles size={16} color={colors.primary} />
-						<Text style={styles.heroBadgeText}>Thiết bị trị liệu</Text>
+						<Text style={styles.heroBadgeText}>Thiết bị hỗ trợ</Text>
 					</View>
 
 					<Text style={styles.heroTitle}>
@@ -55,7 +55,7 @@ export default function ExploreScreen() {
 						<View style={styles.productBody}>
 							<Text style={styles.productName}>TheraNECK</Text>
 							<Text style={styles.productDescription}>
-								Thiết bị hỗ trợ trị liệu vùng cổ vai gáy, phù hợp cho người ngồi
+								Thiết bị hỗ trợ cải thiện vùng cổ vai gáy, phù hợp cho người ngồi
 								nhiều và hay mỏi cổ.
 							</Text>
 							<View style={styles.actionRow}>

@@ -41,22 +41,22 @@ export default function PrivacyScreen() {
 				<Text style={styles.subTitle}>1.2. Thông tin sức khỏe</Text>
 				<Text style={styles.paragraph}>
 					• Vị trí đau (cổ, lưng){"\n"}• Triệu chứng cụ thể{"\n"}• Lịch sử phẫu
-					thuật{"\n"}• Mức độ đau hàng ngày{"\n"}• Lịch sử trị liệu
+					thuật{"\n"}• Mức độ đau hàng ngày{"\n"}• Lịch sử cải thiện
 				</Text>
 
 				<Text style={styles.subTitle}>1.3. Dữ liệu sử dụng</Text>
 				<Text style={styles.paragraph}>
 					• Thời gian sử dụng ứng dụng{"\n"}• Các bài tập đã thực hiện{"\n"}•
-					Phản hồi về bài tập{"\n"}• Thời gian trị liệu ưa thích
+					Phản hồi về bài tập{"\n"}• Thời gian cải thiện ưa thích
 				</Text>
 
 				<Text style={styles.sectionTitle}>
 					2. Cách chúng tôi sử dụng thông tin
 				</Text>
 				<Text style={styles.paragraph}>
-					• Cá nhân hóa chương trình trị liệu phù hợp với tình trạng của bạn
-					{"\n"}• Theo dõi tiến độ và hiệu quả điều trị{"\n"}• Gửi nhắc nhở trị
-					liệu (nếu bạn cho phép){"\n"}• Cải thiện và phát triển ứng dụng{"\n"}•
+					• Cá nhân hóa chương trình cải thiện phù hợp với tình trạng của bạn
+					{"\n"}• Theo dõi tiến độ và hiệu quả điều trị{"\n"}• Gửi nhắc nhở cải
+					thiện (nếu bạn cho phép){"\n"}• Cải thiện và phát triển ứng dụng{"\n"}•
 					Phân tích xu hướng sử dụng (dữ liệu ẩn danh){"\n"}• Hỗ trợ khách hàng
 				</Text>
 

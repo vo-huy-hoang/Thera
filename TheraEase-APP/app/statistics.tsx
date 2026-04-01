@@ -242,7 +242,7 @@ export default function StatisticsScreen() {
                 <Calendar size={28} color="#FFFFFF" strokeWidth={2.5} />
               </View>
               <Text style={styles.statValue}>{stats.totalDays}</Text>
-              <Text style={styles.statLabel}>Ngày trị liệu</Text>
+              <Text style={styles.statLabel}>Ngày cải thiện</Text>
             </LinearGradient>
           </Animated.View>
 
@@ -368,7 +368,7 @@ export default function StatisticsScreen() {
               <View style={styles.achievementCard}>
                 <Award size={32} color="#10B981" fill="#10B981" />
                 <Text style={styles.achievementTitle}>Kiên trì 1 tuần</Text>
-                <Text style={styles.achievementDesc}>Trị liệu 7 ngày</Text>
+                <Text style={styles.achievementDesc}>Cải thiện 7 ngày</Text>
               </View>
             )}
             {stats.currentStreak >= 3 && (
@@ -396,7 +396,7 @@ export default function StatisticsScreen() {
               <View style={styles.achievementCard}>
                 <Award size={32} color="#06B6D4" fill="#06B6D4" />
                 <Text style={styles.achievementTitle}>Tháng đầu tiên</Text>
-                <Text style={styles.achievementDesc}>Trị liệu 30 ngày</Text>
+                <Text style={styles.achievementDesc}>Cải thiện 30 ngày</Text>
               </View>
             )}
           </View>
@@ -405,7 +405,7 @@ export default function StatisticsScreen() {
         {/* Streak Calendar */}
         {stats.totalWorkouts > 0 && (
           <Animated.View entering={FadeInDown.delay(800)}>
-            <Text style={styles.sectionTitle}>Lịch trị liệu (30 ngày)</Text>
+            <Text style={styles.sectionTitle}>Lịch cải thiện (30 ngày)</Text>
             <View style={styles.calendarCard}>
               <View style={styles.calendarLegend}>
                 <View style={styles.legendItem}>
@@ -431,7 +431,7 @@ export default function StatisticsScreen() {
             <Activity size={64} color={colors.textSecondary} strokeWidth={1.5} />
             <Text style={styles.emptyTitle}>Chưa có dữ liệu</Text>
             <Text style={styles.emptyDesc}>
-              Bắt đầu trị liệu để xem thống kê của bạn
+              Bắt đầu luyện tập để xem thống kê của bạn
             </Text>
           </Animated.View>
         )}

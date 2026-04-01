@@ -36,7 +36,7 @@ const messages = [
 	"Hãy cùng lên ý tưởng",
 	"Giảm đau hiệu quả mỗi ngày",
 	"Phục hồi cơ thể khỏe mạnh",
-	"Bác sĩ trị liệu trong túi",
+	"Bác sĩ hỗ trợ trong túi",
 	"Lộ trình dành riêng cho bạn",
 ];
 
@@ -305,7 +305,7 @@ export default function LoginScreen() {
 								entering={FadeInUp.delay(400)}
 								style={styles.title}
 							>
-								TheraEase
+								TheraHOME
 							</Animated.Text>
 
 							<Animated.View entering={FadeInUp.delay(600)}>

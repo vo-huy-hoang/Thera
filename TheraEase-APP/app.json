@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TheraEase",
-    "slug": "theraease-app",
+    "name": "TheraHome",
+    "slug": "therahome-app",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "vn.theraease.app",
+      "bundleIdentifier": "vn.therahome.app",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "Ứng dụng cần quyền này để cải thiện trải nghiệm của bạn",
         "LSApplicationQueriesSchemes": ["https", "http"]
       }
     },
     "android": {
-      "package": "vn.theraease.app",
+      "package": "vn.therahome.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -52,6 +52,6 @@
         }
       ]
     ],
-    "scheme": "theraease"
+    "scheme": "therahome"
   }
 }

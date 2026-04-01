@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'vn.theraease.app'
+    namespace 'vn.therahome.app'
     defaultConfig {
-        applicationId 'vn.theraease.app'
+        applicationId 'vn.therahome.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,4 +1,4 @@
-package vn.theraease.app
+package vn.therahome.app
 
 import android.app.Application
 import android.content.res.Configuration

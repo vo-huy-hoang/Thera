@@ -48,7 +48,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
   app.listen(PORT, () => {
-    console.log(`TheraEase Backend running on port ${PORT}`);
+    console.log(`TheraHome Backend running on port ${PORT}`);
   });
 }
 

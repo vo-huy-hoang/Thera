@@ -1,7 +1,7 @@
 {
-  "name": "theraease-backend",
+  "name": "therahome-backend",
   "version": "1.0.0",
-  "description": "TheraEase Backend API - MongoDB + Express.js",
+  "description": "TheraHome Backend API - MongoDB + Express.js",
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",

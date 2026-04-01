@@ -27,7 +27,7 @@ async function addPrompts() {
   if (!types.includes('motivation')) {
     toAdd.push({
       prompt_type: 'motivation',
-      system_prompt: 'Bạn là huấn luyện viên động lực. Tạo thông điệp truyền cảm hứng, khuyến khích người dùng tiếp tục tập luyện trị liệu. Ngắn gọn 1-2 câu, nhiệt tình và tích cực. Trả lời bằng tiếng Việt.',
+      system_prompt: 'Bạn là huấn luyện viên động lực. Tạo thông điệp truyền cảm hứng, khuyến khích người dùng tiếp tục tập luyện caỉ thiện. Ngắn gọn 1-2 câu, nhiệt tình và tích cực. Trả lời bằng tiếng Việt.',
       temperature: 0.8,
       max_tokens: 150,
       model: 'llama-3.3-70b-versatile',

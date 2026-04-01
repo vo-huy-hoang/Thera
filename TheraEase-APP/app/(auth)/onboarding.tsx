@@ -41,7 +41,7 @@ import Animated, {
 const { width } = Dimensions.get('window');
 
 const tips = [
-  { icon: 'lightbulb', text: 'Trị liệu đều đặn mỗi ngày giúp giảm đau hiệu quả' },
+  { icon: 'lightbulb', text: 'Luyện tập đều đặn mỗi ngày giúp giảm đau hiệu quả' },
   { icon: 'sparkles', text: 'Hãy lắng nghe cơ thể và nghỉ ngơi khi cần thiết' },
   { icon: 'dumbbell', text: 'Kiên trì là chìa khóa để cải thiện sức khỏe' },
   { icon: 'wind', text: 'Kết hợp bài tập với thở sâu để tăng hiệu quả' },
@@ -192,7 +192,6 @@ export default function OnboardingScreen() {
         email: email || '',
         avatar_url: user?.avatar_url || '',
         role: user?.role || 'user',
-        onboarding_completed: true,
         owned_devices: user?.owned_devices || [],
         ...profileData,
         created_at: new Date().toISOString(),

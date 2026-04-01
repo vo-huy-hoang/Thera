@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Image, Dimensions } from 'react-native';
 import Svg, { Circle, Line, Polygon } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import { useAuthStore } from '@/stores/authStore';
 import { colors } from '@/utils/theme';
 import { PAIN_AREAS } from '@/utils/constants';
 
@@ -25,11 +24,9 @@ const { width } = Dimensions.get('window');
 const MAP_WIDTH = width - 32;
 const MAP_HEIGHT = 500;
 
-const MALE_IMAGE = require('../../assets/gender-male.png');
-const FEMALE_IMAGE = require('../../assets/gender-female.png');
+const BODY_OUTLINE = require('../../assets/body-outline.png');
 
 export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
-  const { user } = useAuthStore();
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
 
   const focusAreas = useMemo<FocusArea[]>(
@@ -111,8 +108,6 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
     setSelectedArea(null);
   };
 
-  const avatarSource = user?.gender === 'Nữ' ? FEMALE_IMAGE : MALE_IMAGE;
-
   return (
     <View style={styles.container}>
       <View style={styles.legendContainer}>
@@ -139,7 +134,7 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
       <View style={styles.mapCard}>
         <View style={styles.mapWrap}>
           <View style={styles.imageWindow}>
-            <Image source={avatarSource} style={styles.bodyImage} resizeMode="cover" />
+            <Image source={BODY_OUTLINE} style={styles.bodyImage} resizeMode="contain" />
             <View style={styles.imageShade} />
           </View>
 
@@ -322,20 +317,17 @@ const styles = StyleSheet.create({
   },
   imageWindow: {
     position: 'absolute',
-    top: 36,
-    left: MAP_WIDTH * 0.18,
-    width: MAP_WIDTH * 0.64,
-    height: MAP_HEIGHT * 0.76,
+    top: 10,
+    left: MAP_WIDTH * 0.15,
+    width: MAP_WIDTH * 0.7,
+    height: MAP_HEIGHT * 0.85,
     borderRadius: 28,
     overflow: 'hidden',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   bodyImage: {
-    position: 'absolute',
-    top: -18,
-    left: -10,
-    width: MAP_WIDTH * 0.7,
-    height: MAP_HEIGHT * 0.98,
+    width: '100%',
+    height: '100%',
   },
   imageShade: {
     ...StyleSheet.absoluteFillObject,

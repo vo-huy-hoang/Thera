@@ -97,7 +97,7 @@ export default function SettingsScreen() {
       <List.Section>
         <List.Subheader>Thông báo</List.Subheader>
         <List.Item
-          title="Nhắc nhở trị liệu"
+          title="Nhắc nhở tập luyện"
           description={notificationsEnabled ? 'Đang bật' : 'Đang tắt'}
           left={props => <List.Icon {...props} icon="bell" />}
           right={() => (

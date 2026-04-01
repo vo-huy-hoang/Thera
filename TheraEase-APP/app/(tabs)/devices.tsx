@@ -23,35 +23,35 @@ interface Device {
 const DEVICES: Device[] = [
   {
     id: 'neck_device',
-    name: 'Thiết bị trị liệu cổ',
+    name: 'Thiết bị cải thiện cổ',
     description: 'Giảm đau cổ, vai, gáy',
     Icon: Activity, // Icon sóng/nhịp cho cổ
     color: ['#5B9BD5', '#4A7FB8'],
   },
   {
     id: 'back_device',
-    name: 'Thiết bị trị liệu lưng',
+    name: 'Thiết bị cải thiện lưng',
     description: 'Giảm đau lưng trên, giữa, dưới',
     Icon: Heart, // Icon tim cho lưng/cột sống
     color: ['#10B981', '#059669'],
   },
   {
     id: 'shoulder_device',
-    name: 'Thiết bị trị liệu vai',
+    name: 'Thiết bị cải thiện vai',
     description: 'Giảm đau vai, cánh tay',
     Icon: Zap, // Icon sét cho vai/năng lượng
     color: ['#F59E0B', '#D97706'],
   },
   {
     id: 'arm_device',
-    name: 'Thiết bị trị liệu tay',
+    name: 'Thiết bị cải thiện tay',
     description: 'Giảm tê tay, đau cánh tay',
     Icon: Hand, // Icon bàn tay
     color: ['#8B5CF6', '#7C3AED'],
   },
   {
     id: 'leg_device',
-    name: 'Thiết bị trị liệu chân',
+    name: 'Thiết bị cải thiện chân',
     description: 'Giảm đau chân, tê chân',
     Icon: Footprints, // Icon dấu chân
     color: ['#EF4444', '#DC2626'],

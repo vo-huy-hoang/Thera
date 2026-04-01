@@ -35,7 +35,7 @@ export default function TermsScreen() {
 				<Text style={styles.sectionTitle}>2. Mục đích sử dụng</Text>
 				<Text style={styles.paragraph}>
 					TheraHOME là ứng dụng hỗ trợ giảm đau cổ và lưng thông qua các bài tập
-					vật lý trị liệu với AI. Ứng dụng KHÔNG thay thế cho việc khám và điều
+					vật lý cải thiện với AI. Ứng dụng KHÔNG thay thế cho việc khám và điều
 					trị y tế chuyên nghiệp.
 				</Text>
 

@@ -1,4 +1,4 @@
-# GEMINI.md - TheraEase Admin Panel
+# GEMINI.md - TheraHome Admin Panel
 
 ## Tech Stack
 - **Framework**: Next.js 16+ (App Router)

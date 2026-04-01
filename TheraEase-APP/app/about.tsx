@@ -30,9 +30,9 @@ export default function AboutScreen() {
 
 				<Text style={styles.sectionTitle}>Tính năng chính</Text>
 				<Text style={styles.paragraph}>
-					• Theo dõi mức độ đau hàng ngày{"\n"}• Bài tập vật lý trị liệu được cá
+					• Theo dõi mức độ đau hàng ngày{"\n"}• Bài tập vật lý cải thiện được cá
 					nhân hóa{"\n"}• Gợi ý thông minh dựa trên triệu chứng{"\n"}• Nhắc nhở
-					trị liệu đều đặn{"\n"}• Trợ lý AI hỗ trợ 24/7
+					cải thiện đều đặn{"\n"}• Trợ lý AI hỗ trợ 24/7
 				</Text>
 
 				<Text style={styles.sectionTitle}>Sứ mệnh</Text>

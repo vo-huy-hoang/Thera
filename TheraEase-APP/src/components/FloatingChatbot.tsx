@@ -448,7 +448,7 @@ export default function FloatingChatbot() {
 											<Bot size={24} color="#FFFFFF" />
 										</View>
 										<View>
-											<Text style={styles.headerTitle}>TheraBot</Text>
+											<Text style={styles.headerTitle}>TheraAI</Text>
 											<Text style={styles.headerSubtitle}>
 												Trợ lý sức khỏe thông minh
 											</Text>

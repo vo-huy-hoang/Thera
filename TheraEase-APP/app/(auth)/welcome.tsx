@@ -48,7 +48,7 @@ export default function WelcomeScreen() {
 
 				<Animated.View entering={FadeInDown.delay(500).duration(600)}>
 					<Text style={styles.description}>
-						Tôi là trợ lí trị liệu AI cá nhân của bạn.{"\n"}
+						Tôi là trợ lí cải thiện AI cá nhân của bạn.{"\n"}
 						Để đạt được hiệu quả cao nhất cho{"\n"}
 						<Text style={styles.highlightText}>lộ trình cá nhân hoá</Text> sắp
 						tới,

@@ -1,18 +1,18 @@
-# GEMINI.md - TheraEase Project Guidelines
+# GEMINI.md - TheraHome Project Guidelines
 
-This file provides context and instructions for AI coding assistants working on the TheraEase project.
+This file provides context and instructions for AI coding assistants working on the TheraHome project.
 
 ## Project Overview
-TheraEase is a comprehensive healthcare platform consisting of a mobile application, an admin dashboard, and a robust backend.
+TheraHome is a comprehensive healthcare platform consisting of a mobile application, an admin dashboard, and a robust backend.
 
 ### Project Structure
-- **/TheraEase-APP**: Mobile application built with Expo (React Native).
+- **/TheraEase-APP**: Mobile application built with Expo (React Native). (folder name kept as TheraEase-APP)
 - **/admin-panel**: Web dashboard for administrators built with Next.js.
 - **/backend**: REST API and server logic built with Express.js and MongoDB.
 
 ---
 
-## 📱 TheraEase-APP (Mobile)
+## 📱 TheraHome-APP (Mobile)
 - **Framework**: Expo (React Native)
 - **State Management**: Zustand
 - **Backend-as-a-Service**: Supabase

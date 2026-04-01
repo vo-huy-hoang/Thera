@@ -190,7 +190,7 @@ export default function ProductAssessmentsScreen() {
                   <Text style={styles.productDescription}>
                     {product.purchase_link
                       ? `Liên kết mua: ${product.purchase_link}`
-                      : 'Sản phẩm trị liệu dành riêng cho bạn. Hãy lưu lại cảm nhận thực tế sau khi sử dụng.'}
+                      : 'Sản phẩm cải thiện dành riêng cho bạn. Hãy lưu lại cảm nhận thực tế sau khi sử dụng.'}
                   </Text>
 
                   <View style={styles.ratingRow}>

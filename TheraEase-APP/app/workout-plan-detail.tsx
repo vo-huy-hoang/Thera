@@ -167,7 +167,7 @@ export default function WorkoutPlanDetailScreen() {
   const progressPercent = (completedCount / FIXED_PLAN_DAYS) * 100;
   const selectedAreaLabel = typeof params.selectedAreaLabel === 'string' ? params.selectedAreaLabel : '';
   const displayPlanTitle = selectedAreaLabel
-    ? `Lộ trình trị liệu ${selectedAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`
+    ? `Lộ trình cải thiện ${selectedAreaLabel.toLocaleLowerCase('vi-VN')} ${FIXED_PLAN_DAYS} ngày`
     : plan.title.replace(/\d+\s*ngày/i, `${FIXED_PLAN_DAYS} ngày`);
 
   return (
@@ -209,7 +209,7 @@ export default function WorkoutPlanDetailScreen() {
         <Animated.View entering={FadeInDown.delay(100)} style={styles.calendarSection}>
           <View style={styles.sectionHeader}>
             <Calendar size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Lịch trị liệu</Text>
+            <Text style={styles.sectionTitle}>Lịch cải thiện</Text>
           </View>
 
           <View style={styles.calendar}>

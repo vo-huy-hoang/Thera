@@ -76,11 +76,11 @@ export default function PainAnalysisScreen() {
       const diff = today.pain_level - yesterday.pain_level;
       
       if (diff < 0) {
-        setAiInsight(`Tuyệt vời! Mức đau giảm ${Math.abs(diff)} điểm so với hôm qua. Hãy tiếp tục duy trì các bài tập trị liệu.`);
+        setAiInsight(`Tuyệt vời! Mức đau giảm ${Math.abs(diff)} điểm so với hôm qua. Hãy tiếp tục duy trì các bài tập cải thiện.`);
       } else if (diff > 0) {
         setAiInsight(`Mức đau tăng ${diff} điểm so với hôm qua. Hãy nghỉ ngơi đầy đủ và làm các bài tập nhẹ nhàng hơn.`);
       } else {
-        setAiInsight('Mức đau ổn định so với hôm qua. Hãy tiếp tục theo dõi và duy trì lộ trình trị liệu.');
+        setAiInsight('Mức đau ổn định so với hôm qua. Hãy tiếp tục theo dõi và duy trì lộ trình cải thiện.');
       }
     }
   };

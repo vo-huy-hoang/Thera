@@ -1,7 +1,7 @@
 export default {
   expo: {
-    name: "TheraEase",
-    slug: "theraease-app",
+    name: "TheraHome",
+    slug: "therahome-app",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -16,14 +16,14 @@ export default {
     ],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "vn.theraease.app"
+      bundleIdentifier: "vn.therahome.app"
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
-      package: "vn.theraease.app",
+      package: "vn.therahome.app",
       permissions: [
         "CAMERA",
         "NOTIFICATIONS"
@@ -48,7 +48,7 @@ export default {
         }
       ]
     ],
-    scheme: "theraease",
+    scheme: "therahome",
     extra: {
       eas: {
         projectId: "your-project-id"

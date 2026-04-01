@@ -20,7 +20,6 @@ import {
 	Armchair,
 	ShieldCheck,
 	Sparkles,
-	ChevronRight,
 	Target,
 } from "lucide-react-native";
 import { useAuthStore } from "@/stores/authStore";
@@ -185,19 +184,18 @@ export default function GoalsScreen() {
 												</Text>
 											</View>
 
-											{isSelected && (
-												<MotiView
-													from={{ opacity: 0, scale: 0 }}
-													animate={{ opacity: 1, scale: 1 }}
-													style={styles.selectedCheck}
-												>
-													<ChevronRight
-														size={20}
-														color={goal.color}
-														strokeWidth={3}
+											<View style={[
+												styles.radioCircle,
+												isSelected && { borderColor: goal.color }
+											]}>
+												{isSelected && (
+													<MotiView
+														from={{ opacity: 0, scale: 0 }}
+														animate={{ opacity: 1, scale: 1 }}
+														style={[styles.radioInner, { backgroundColor: goal.color }]}
 													/>
-												</MotiView>
-											)}
+												)}
+											</View>
 										</View>
 									</TouchableOpacity>
 								</MotiView>
@@ -332,8 +330,20 @@ const styles = StyleSheet.create({
 		color: "#111827",
 		fontWeight: "700",
 	},
-	selectedCheck: {
-		marginLeft: 8,
+	radioCircle: {
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		borderWidth: 2,
+		borderColor: '#D1D5DB',
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginLeft: 12,
+	},
+	radioInner: {
+		width: 12,
+		height: 12,
+		borderRadius: 6,
 	},
 	footer: {
 		paddingVertical: 20,
