@@ -41,7 +41,15 @@ export default function WarningScreen() {
 
         <Animated.View entering={FadeInDown.delay(400).duration(600)}>
           <Text style={styles.description}>
-            Sức khoẻ cột sống của bạn đang ở giai đoạn cần <Text style={styles.highlightText}>cải thiện</Text> và <Text style={styles.highlightText}>bảo tồn</Text> gấp để tránh các biến chứng nguy hiểm:
+            {isSevere ? (
+              <>
+                Sức khoẻ cột sống của bạn đang ở giai đoạn cần <Text style={styles.highlightText}>cải thiện</Text> và <Text style={styles.highlightText}>bảo tồn</Text> gấp để tránh các biến chứng nguy hiểm:
+              </>
+            ) : (
+              <>
+                Sức khỏe cột sống của bạn đang phát tín hiệu <Text style={styles.highlightText}>cần được quan tâm sớm</Text>, nên can thiệp sớm nếu để lâu sẽ dẫn đến:
+              </>
+            )}
           </Text>
         </Animated.View>
 

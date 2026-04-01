@@ -19,10 +19,10 @@ import { colors } from '@/utils/theme';
 const { width } = Dimensions.get('window');
 
 const OPTIONS = [
-  { id: 'sore', label: 'Chỉ đau mỏi', icon: Activity, color: '#10B981', description: 'Cơ bắp căng thẳng, mệt mỏi' },
-  { id: 'degeneration', label: 'Thoái hoá', icon: Bone, color: '#F59E0B', description: 'Thoái hóa đốt sống, khớp' },
+  { id: 'sore', label: 'Chỉ đau mỏi', icon: Activity, color: '#10B981', description: 'Đau mỏi cơ, nhức' },
+  { id: 'degeneration', label: 'Thoái hoá', icon: Bone, color: '#F59E0B', description: 'Thoái hoá đốt sống' },
   { id: 'herniation', label: 'Thoát vị', icon: Stethoscope, color: '#EF4444', description: 'Thoát vị đĩa đệm, chèn ép' },
-  { id: 'all', label: 'Tất cả', icon: PlusCircle, color: '#3B82F6', description: 'Đang gặp nhiều vấn đề kết hợp' },
+  { id: 'all', label: 'Tất cả', icon: PlusCircle, color: '#3B82F6', description: 'Tất cả những bệnh lý kể trên' },
 ];
 
 export default function MedicalHistoryScreen() {
