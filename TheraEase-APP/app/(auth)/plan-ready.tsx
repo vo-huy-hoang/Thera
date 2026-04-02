@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '@/stores/authStore';
-import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
@@ -103,6 +103,23 @@ export default function PlanReadyScreen() {
              <View style={styles.planHeader}>
                 <Text style={styles.planTitle}>Lộ trình 14 ngày</Text>
              </View>
+
+             <View style={styles.planPreview}>
+                <View style={styles.planPreviewCopy}>
+                   <Text style={styles.planPreviewEyebrow}>Luyện tập cùng hướng dẫn mẫu</Text>
+                   <Text style={styles.planPreviewText}>
+                     Theo từng ngày để tiến đều tới mục tiêu mà không bỏ lỡ buổi nào.
+                   </Text>
+                </View>
+
+                <Animated.View entering={FadeInUp.delay(200).duration(450)} style={styles.avatarCard}>
+                   <Image
+                     source={require('../../assets/gender-male.png')}
+                     style={styles.avatarImage}
+                     resizeMode="contain"
+                   />
+                </Animated.View>
+             </View>
              
              <View style={styles.grid}>
                 {PLAN_DAYS.map((day, index) => (
@@ -117,15 +134,6 @@ export default function PlanReadyScreen() {
                       </Text>
                    </Animated.View>
                 ))}
-                
-                {/* Floating Image as Overlay like the screenshot */}
-                <View style={styles.floatingAvatarContainer}>
-                   <Image 
-                     source={require('../../assets/gender-male.png')} 
-                     style={styles.floatingAvatar}
-                     resizeMode="contain"
-                   />
-                </View>
              </View>
 
              <TouchableOpacity 
@@ -227,20 +235,60 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
+  planPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  planPreviewCopy: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  planPreviewEyebrow: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
+    marginBottom: 6,
+  },
+  planPreviewText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#4B5563',
+  },
+  avatarCard: {
+    width: width * 0.3,
+    height: width * 0.38,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 15,
     justifyContent: 'space-between',
-    position: 'relative',
   },
   gridItem: {
-    width: '18%',
-    aspectRatio: 1,
+    width: '22%',
+    minHeight: 84,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     marginBottom: 10,
-    padding: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -258,18 +306,6 @@ const styles = StyleSheet.create({
   },
   restText: {
     color: '#999',
-  },
-  floatingAvatarContainer: {
-    position: 'absolute',
-    right: 0,
-    bottom: 50,
-    width: width * 0.45,
-    height: width * 0.55,
-    zIndex: 10,
-  },
-  floatingAvatar: {
-    width: '100%',
-    height: '100%',
   },
   ctaButton: {
     backgroundColor: '#3B82F6',

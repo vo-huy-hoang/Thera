@@ -28,18 +28,32 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>therahome</string>
+          <string>fb34694532530194658</string>
           <string>vn.therahome.app</string>
-        </array>
-      </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.googleusercontent.apps.649289480953-c08htkrkh6biibj8v46qbpjb1ud8soij</string>
         </array>
       </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>FacebookAdvertiserIDCollectionEnabled</key>
+    <false/>
+    <key>FacebookAppID</key>
+    <string>34694532530194658</string>
+    <key>FacebookAutoInitEnabled</key>
+    <false/>
+    <key>FacebookAutoLogAppEventsEnabled</key>
+    <false/>
+    <key>FacebookDisplayName</key>
+    <string>TheraEase</string>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+      <string>https</string>
+      <string>http</string>
+      <string>fbapi</string>
+      <string>fb-messenger-api</string>
+      <string>fbauth2</string>
+      <string>fbshareextension</string>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
@@ -52,15 +66,28 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>Allow app to access camera for QR code scanning</string>
+    <string>Ứng dụng cần quyền camera để quét mã QR kích hoạt thiết bị</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>Ứng dụng cần quyền này để cải thiện trải nghiệm của bạn</string>
     <key>RCTNewArchEnabled</key>
     <true/>
+    <key>SKAdNetworkItems</key>
+    <array>
+      <dict>
+        <key>SKAdNetworkIdentifier</key>
+        <string>v9wttpbfk9.skadnetwork</string>
+      </dict>
+      <dict>
+        <key>SKAdNetworkIdentifier</key>
+        <string>n38lu8286q.skadnetwork</string>
+      </dict>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
@@ -84,7 +111,7 @@
       <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UIUserInterfaceStyle</key>
-    <string>Light</string>
+    <string>Automatic</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
   </dict>

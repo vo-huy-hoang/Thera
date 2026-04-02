@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { View, StyleSheet, TouchableOpacity, PanResponder, LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, Play, Pause, CheckCircle, RotateCcw, RotateCw } from 'lucide-react-native';
 import { Video, ResizeMode } from 'expo-av';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { useAuthStore } from '@/stores/authStore';
@@ -15,7 +16,7 @@ import * as Haptics from 'expo-haptics';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { extractYouTubeVideoId, isYouTubeUrl } from '@/utils/youtube';
 
-const { width, height } = Dimensions.get('window');
+const YOUTUBE_SKIP_SECONDS = 10;
 
 interface Exercise {
   id: string;
@@ -29,6 +30,7 @@ export default function WorkoutSequenceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user, setUser } = useAuthStore();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,16 @@ export default function WorkoutSequenceScreen() {
   const [dayVideoUrl, setDayVideoUrl] = useState<string | null>(null);
   const [isStartingCountdown, setIsStartingCountdown] = useState(false);
   const [videoCompleted, setVideoCompleted] = useState(false);
+  const [playbackPositionMs, setPlaybackPositionMs] = useState(0);
+  const [playbackDurationMs, setPlaybackDurationMs] = useState(0);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  const [scrubPositionMs, setScrubPositionMs] = useState(0);
+  const [seekBarWidth, setSeekBarWidth] = useState(0);
+  const [youtubeReady, setYoutubeReady] = useState(false);
+  const youtubePlayerRef = useRef<any>(null);
+  const durationRef = useRef(0);
+  const seekBarWidthRef = useRef(0);
+  const [showControls, setShowControls] = useState(true);
 
   useEffect(() => {
     loadExercises();
@@ -48,6 +60,14 @@ export default function WorkoutSequenceScreen() {
       ScreenOrientation.unlockAsync();
     };
   }, []);
+
+  useEffect(() => {
+    durationRef.current = playbackDurationMs;
+  }, [playbackDurationMs]);
+
+  useEffect(() => {
+    seekBarWidthRef.current = seekBarWidth;
+  }, [seekBarWidth]);
 
   const loadExercises = async () => {
     if (!params.planId || !params.day) return;
@@ -138,6 +158,137 @@ export default function WorkoutSequenceScreen() {
     setVideoCompleted(true);
   };
 
+  const formatPlaybackTime = (milliseconds: number) => {
+    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const resolveSeekPosition = (locationX: number) => {
+    const safeWidth = seekBarWidthRef.current || seekBarWidth;
+    const safeDuration = durationRef.current || playbackDurationMs;
+    if (!safeWidth || !safeDuration) return 0;
+
+    const ratio = Math.min(1, Math.max(0, locationX / safeWidth));
+    return ratio * safeDuration;
+  };
+
+  const seekToPosition = async (targetMs: number) => {
+    const safeDuration = durationRef.current || playbackDurationMs;
+    const clampedMs = Math.max(0, Math.min(targetMs, safeDuration || targetMs));
+
+    if (isYoutubeVideo && youtubePlayerRef.current) {
+      youtubePlayerRef.current.seekTo(clampedMs / 1000, true);
+      setPlaybackPositionMs(clampedMs);
+      return;
+    }
+
+    if (!videoRef) return;
+    await videoRef.setPositionAsync(clampedMs);
+    setPlaybackPositionMs(clampedMs);
+  };
+
+  const handleSkip = async (seconds: number) => {
+    try {
+      if (isYoutubeVideo && youtubePlayerRef.current) {
+        const currentTime = await youtubePlayerRef.current.getCurrentTime();
+        const nextTime = Math.max(0, currentTime + seconds);
+        youtubePlayerRef.current.seekTo(nextTime, true);
+        setPlaybackPositionMs(nextTime * 1000);
+        return;
+      }
+
+      if (!videoRef) return;
+      const status = await videoRef.getStatusAsync();
+      if (!status.isLoaded) return;
+
+      const nextPosition = Math.max(
+        0,
+        Math.min(status.positionMillis + seconds * 1000, status.durationMillis || status.positionMillis)
+      );
+      await videoRef.setPositionAsync(nextPosition);
+    } catch (error) {
+      console.log('Skip video error:', error);
+    }
+  };
+
+  const seekBarPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          const nextPosition = resolveSeekPosition(event.nativeEvent.locationX);
+          setIsScrubbing(true);
+          setScrubPositionMs(nextPosition);
+        },
+        onPanResponderMove: (event) => {
+          const nextPosition = resolveSeekPosition(event.nativeEvent.locationX);
+          setScrubPositionMs(nextPosition);
+        },
+        onPanResponderRelease: async (event) => {
+          const nextPosition = resolveSeekPosition(event.nativeEvent.locationX);
+          setIsScrubbing(false);
+          setScrubPositionMs(nextPosition);
+          await seekToPosition(nextPosition);
+        },
+        onPanResponderTerminate: async () => {
+          setIsScrubbing(false);
+          await seekToPosition(scrubPositionMs);
+        },
+      }),
+    [playbackDurationMs, seekBarWidth, scrubPositionMs]
+  );
+
+  const handlePlayPause = async () => {
+    if (isPlaying) {
+      if (!isYoutubeVideo && videoRef) await videoRef.pauseAsync();
+      setIsPlaying(false);
+    } else {
+      if (!isYoutubeVideo && videoRef) await videoRef.playAsync();
+      setIsPlaying(true);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const toggleControls = () => {
+    setShowControls((previous) => !previous);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const currentExercise = exercises[0] || null;
+  const currentVideoUrl = dayVideoUrl || currentExercise?.video_url || '';
+  const isYoutubeVideo = currentExercise ? isYouTubeUrl(currentVideoUrl) : false;
+  const youtubeVideoId = isYoutubeVideo ? extractYouTubeVideoId(currentVideoUrl) : null;
+  const videoFrameWidth = Math.max(windowWidth, windowHeight);
+  const videoFrameHeight = Math.min(windowWidth, windowHeight);
+  const displayedPositionMs = isScrubbing ? scrubPositionMs : playbackPositionMs;
+  const progressRatio =
+    playbackDurationMs > 0
+      ? Math.min(1, Math.max(0, displayedPositionMs / playbackDurationMs))
+      : 0;
+
+  useEffect(() => {
+    if (!isYoutubeVideo || !youtubeReady || !youtubePlayerRef.current || isScrubbing) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const [currentTime, totalDuration] = await Promise.all([
+          youtubePlayerRef.current.getCurrentTime(),
+          youtubePlayerRef.current.getDuration(),
+        ]);
+
+        setPlaybackPositionMs(currentTime * 1000);
+        setPlaybackDurationMs(totalDuration * 1000);
+      } catch (error) {
+        // Ignore intermittent YouTube bridge errors while polling.
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isYoutubeVideo, youtubeReady, youtubeVideoId, isScrubbing]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -159,18 +310,15 @@ export default function WorkoutSequenceScreen() {
     );
   }
 
-  const currentExercise = exercises[0];
-  const currentVideoUrl = dayVideoUrl || currentExercise.video_url;
-  const isYoutubeVideo = isYouTubeUrl(currentVideoUrl);
-  const youtubeVideoId = isYoutubeVideo ? extractYouTubeVideoId(currentVideoUrl) : null;
-
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <View style={styles.videoContainer}>
-        {isYoutubeVideo && youtubeVideoId ? (
+      {isYoutubeVideo && youtubeVideoId ? (
+        <View style={styles.videoContainer} pointerEvents="box-none">
           <YoutubePlayer
-            height={width}
-            width={height}
+            key={`${videoFrameWidth}x${videoFrameHeight}`}
+            ref={youtubePlayerRef}
+            height={videoFrameHeight}
+            width={videoFrameWidth}
             play={isPlaying}
             videoId={youtubeVideoId}
             onChangeState={(state: string) => {
@@ -179,62 +327,84 @@ export default function WorkoutSequenceScreen() {
                 setIsPlaying(false);
               } else if (state === 'playing') {
                 setIsPlaying(true);
-                maybeStartPersonalizedPlanCountdown();
+                void maybeStartPersonalizedPlanCountdown();
               } else if (state === 'paused') {
                 setIsPlaying(false);
               }
             }}
+            onReady={() => setYoutubeReady(true)}
             initialPlayerParams={{
               controls: true,
               modestbranding: true,
               rel: false,
             }}
           />
-        ) : (
-          <Video
-            ref={(ref) => setVideoRef(ref)}
-            source={{ uri: currentVideoUrl }}
-            style={styles.video}
-            resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={isPlaying}
-            isLooping={false}
-            onPlaybackStatusUpdate={(status: any) => {
-              if (status.isLoaded && status.isPlaying) {
-                maybeStartPersonalizedPlanCountdown();
-              }
-              if (status.didJustFinish) {
-                handleVideoEnd();
-              }
-            }}
-          />
-        )}
-
-        {/* Controls Overlay */}
-          <View style={styles.overlay}>
-            {/* Header */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.8)', 'transparent']}
-              style={styles.header}
+          <View style={styles.youtubeTopBar}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
             >
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-              >
-                <ArrowLeft size={28} color="#FFF" />
-              </TouchableOpacity>
-              
-              <View style={styles.headerInfo}>
-                <Text style={styles.headerTitle}>{currentExercise.title}</Text>
+              <ArrowLeft size={28} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+
+          {showControls && (
+            <View style={styles.youtubeBottomDock}>
+              <View style={styles.youtubeProgressCard}>
+                <View style={styles.youtubeTimeRow}>
+                  <Text style={styles.youtubeTimeText}>
+                    {formatPlaybackTime(displayedPositionMs)}
+                  </Text>
+                  <Text style={styles.youtubeTimeText}>
+                    {formatPlaybackTime(playbackDurationMs)}
+                  </Text>
+                </View>
+
+                <View
+                  style={styles.youtubeSeekTrack}
+                  onLayout={(event: LayoutChangeEvent) => {
+                    setSeekBarWidth(event.nativeEvent.layout.width);
+                  }}
+                  {...seekBarPanResponder.panHandlers}
+                >
+                  <View style={styles.youtubeSeekTrackBase} />
+                  <View
+                    style={[
+                      styles.youtubeSeekTrackFill,
+                      { width: `${progressRatio * 100}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.youtubeSeekThumb,
+                      { left: Math.max(0, progressRatio * seekBarWidth - 9) },
+                    ]}
+                  />
+                </View>
               </View>
-            </LinearGradient>
 
+              <View style={styles.youtubeSeekRow}>
+                <TouchableOpacity
+                  style={styles.youtubeSeekButton}
+                  onPress={() => handleSkip(-YOUTUBE_SKIP_SECONDS)}
+                >
+                  <RotateCcw size={18} color="#FFFFFF" />
+                  <Text style={styles.youtubeSeekLabel}>
+                    -{YOUTUBE_SKIP_SECONDS}s
+                  </Text>
+                </TouchableOpacity>
 
+                <TouchableOpacity
+                  style={styles.youtubeSeekButton}
+                  onPress={() => handleSkip(YOUTUBE_SKIP_SECONDS)}
+                >
+                  <RotateCw size={18} color="#FFFFFF" />
+                  <Text style={styles.youtubeSeekLabel}>
+                    +{YOUTUBE_SKIP_SECONDS}s
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-            {/* Bottom Controls */}
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.8)']}
-              style={styles.bottomControls}
-            >
               {videoCompleted && (
                 <TouchableOpacity
                   style={styles.nextButton}
@@ -246,9 +416,94 @@ export default function WorkoutSequenceScreen() {
                   </>
                 </TouchableOpacity>
               )}
-            </LinearGradient>
-          </View>
-      </View>
+            </View>
+          )}
+        </View>
+      ) : (
+        <TouchableOpacity 
+          style={styles.videoContainer}
+          activeOpacity={1}
+          onPress={toggleControls}
+        >
+          <Video
+            ref={(ref) => setVideoRef(ref)}
+            source={{ uri: currentVideoUrl }}
+            style={[
+              styles.video,
+              { width: videoFrameWidth, height: videoFrameHeight },
+            ]}
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay={isPlaying}
+            isLooping={false}
+            onPlaybackStatusUpdate={(status: any) => {
+              if (status.isLoaded) {
+                setPlaybackPositionMs(status.positionMillis || 0);
+                setPlaybackDurationMs(status.durationMillis || 0);
+              }
+              if (status.isLoaded && status.isPlaying) {
+                void maybeStartPersonalizedPlanCountdown();
+              }
+              if (status.didJustFinish) {
+                handleVideoEnd();
+              }
+            }}
+          />
+
+          {/* Controls Overlay */}
+          {showControls && (
+            <Animated.View entering={FadeInDown} style={styles.overlay}>
+              {/* Header */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.8)', 'transparent']}
+                style={styles.header}
+              >
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => router.back()}
+                >
+                  <ArrowLeft size={28} color="#FFF" />
+                </TouchableOpacity>
+                
+                <View style={styles.headerInfo}>
+                  <Text style={styles.headerTitle}>{currentExercise.title}</Text>
+                </View>
+              </LinearGradient>
+
+              {/* Center Controls */}
+              <View style={styles.centerControls}>
+                <TouchableOpacity
+                  style={styles.playButton}
+                  onPress={handlePlayPause}
+                >
+                  {isPlaying ? (
+                    <Pause size={48} color="#FFF" fill="#FFF" />
+                  ) : (
+                    <Play size={48} color="#FFF" fill="#FFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Bottom Controls */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={styles.bottomControls}
+              >
+                {videoCompleted && (
+                  <TouchableOpacity
+                    style={styles.nextButton}
+                    onPress={handleComplete}
+                  >
+                    <>
+                      <CheckCircle size={24} color="#FFF" />
+                      <Text style={styles.nextButtonText}>Xong</Text>
+                    </>
+                  </TouchableOpacity>
+                )}
+              </LinearGradient>
+            </Animated.View>
+          )}
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -281,14 +536,90 @@ const styles = StyleSheet.create({
   videoContainer: {
     flex: 1,
     backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
-    width: height, // Landscape: use height as width
-    height: width, // Landscape: use width as height
+    alignSelf: 'center',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
+  },
+  youtubeTopBar: {
+    position: 'absolute',
+    top: 24,
+    left: 20,
+    zIndex: 2,
+  },
+  youtubeBottomDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 22,
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 20,
+  },
+  youtubeProgressCard: {
+    width: '100%',
+    maxWidth: 520,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.68)',
+  },
+  youtubeTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  youtubeTimeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  youtubeSeekTrack: {
+    height: 28,
+    justifyContent: 'center',
+  },
+  youtubeSeekTrackBase: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.26)',
+  },
+  youtubeSeekTrackFill: {
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+  },
+  youtubeSeekThumb: {
+    position: 'absolute',
+    top: 5,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+  },
+  youtubeSeekRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  youtubeSeekButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.68)',
+  },
+  youtubeSeekLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -310,6 +641,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFF',
     marginBottom: 4,
+  },
+  centerControls: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFF',
   },
 
   bottomControls: {

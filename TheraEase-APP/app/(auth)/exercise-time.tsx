@@ -5,9 +5,10 @@ import {
 	Dimensions,
 	TouchableOpacity,
 	Alert,
+	ScrollView,
 } from "react-native";
 import { Text, Button } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
@@ -57,6 +58,7 @@ export default function ExerciseTimeScreen() {
 	const router = useRouter();
 	const params = useLocalSearchParams();
 	const { user, setUser } = useAuthStore();
+	const insets = useSafeAreaInsets();
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [notificationTime, setNotificationTime] = useState(
 		new Date(new Date().setHours(20, 0, 0, 0)),
@@ -111,7 +113,15 @@ export default function ExerciseTimeScreen() {
 			/>
 
 			<SafeAreaView style={styles.safeArea}>
-				<View style={styles.content}>
+				<ScrollView
+					style={styles.content}
+					contentContainerStyle={[
+						styles.contentContainer,
+						{ paddingBottom: insets.bottom + 24 },
+					]}
+					showsVerticalScrollIndicator={false}
+					keyboardShouldPersistTaps="handled"
+				>
 					<MotiView
 						from={{ opacity: 0, translateY: -20 }}
 						animate={{ opacity: 1, translateY: 0 }}
@@ -283,7 +293,7 @@ export default function ExerciseTimeScreen() {
 							TIẾP TỤC
 						</Button>
 					</MotiView>
-				</View>
+				</ScrollView>
 			</SafeAreaView>
 		</View>
 	);
@@ -298,6 +308,8 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		flex: 1,
+	},
+	contentContainer: {
 		paddingHorizontal: 24,
 	},
 	header: {
@@ -386,7 +398,7 @@ const styles = StyleSheet.create({
 		right: 12,
 	},
 	timeSection: {
-		flex: 1,
+		marginBottom: 12,
 	},
 	timeCard: {
 		backgroundColor: "#FFFFFF",
@@ -445,7 +457,8 @@ const styles = StyleSheet.create({
 		marginLeft: 8,
 	},
 	footer: {
-		paddingVertical: 20,
+		paddingTop: 8,
+		paddingBottom: 12,
 	},
 	button: {
 		borderRadius: 20,
