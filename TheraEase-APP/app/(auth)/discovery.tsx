@@ -277,6 +277,7 @@ export default function DiscoveryScreen() {
             contentStyle={styles.buttonContent}
             labelStyle={styles.buttonLabel}
             buttonColor="#3B82F6"
+            uppercase={false}
           >
             TIẾP TỤC
           </Button>
@@ -373,5 +374,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    lineHeight: 28,
   },
 });

@@ -95,6 +95,7 @@ export default function WarningScreen() {
             contentStyle={styles.buttonContent}
             labelStyle={styles.buttonLabel}
             buttonColor="#3B82F6"
+            uppercase={false}
           >
             CẢI THIỆN NGAY
           </Button>
@@ -184,5 +185,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    lineHeight: 28,
   },
 });

@@ -42,7 +42,7 @@ export default function PlanReadyScreen() {
         <View style={styles.content}>
           <Animated.View entering={FadeInUp.duration(600).springify()}>
             <Text style={styles.title}>
-              Chào bạn <Text style={styles.bold}>{user?.full_name || 'Khách hàng'}</Text>,{'\n'}
+              Chào bạn<Text style={styles.bold}>{user?.full_name?.trim() ? ` ${user.full_name.trim()}` : ''}</Text>,{'\n'}
               Lộ trình cá nhân hoá, ngay tại nhà của bạn đã sẵn sàng!
             </Text>
           </Animated.View>
@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: 'bold',
+    color: '#333',
   },
   chartContainer: {
     backgroundColor: '#F9FAFB',
