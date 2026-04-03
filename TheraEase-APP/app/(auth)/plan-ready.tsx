@@ -107,7 +107,7 @@ export default function PlanReadyScreen() {
              <View style={styles.planIllustrationRow}>
                 <View style={styles.planIllustrationCard}>
                    <Image
-                     source={require('../../assets/gender-male.png')}
+                     source={require('../../assets/Lấy lộ trình.png')}
                      style={styles.planIllustrationImage}
                      resizeMode="contain"
                    />

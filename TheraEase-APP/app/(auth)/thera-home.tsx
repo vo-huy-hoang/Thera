@@ -112,9 +112,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 27,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 38,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   titleItalic: {
     fontStyle: 'italic',
@@ -132,10 +135,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#4B5563',
+    color: '#F9FAFB',
     textAlign: 'center',
     marginTop: 14,
-    fontWeight: '400',
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.65)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   labelsContainer: {
     flex: 1,
