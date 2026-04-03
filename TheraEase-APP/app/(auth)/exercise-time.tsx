@@ -5,6 +5,7 @@ import {
 	Dimensions,
 	TouchableOpacity,
 	Alert,
+	ScrollView,
 } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -111,10 +112,15 @@ export default function ExerciseTimeScreen() {
 			/>
 
 			<SafeAreaView style={styles.safeArea}>
-				<View style={styles.content}>
-					<MotiView
-						from={{ opacity: 0, translateY: -20 }}
-						animate={{ opacity: 1, translateY: 0 }}
+				<ScrollView
+					contentContainerStyle={styles.scrollContent}
+					showsVerticalScrollIndicator={false}
+					bounces={false}
+				>
+					<View style={styles.content}>
+						<MotiView
+							from={{ opacity: 0, translateY: -20 }}
+							animate={{ opacity: 1, translateY: 0 }}
 						transition={{ type: "timing", duration: 800 }}
 						style={styles.header}
 					>
@@ -265,11 +271,11 @@ export default function ExerciseTimeScreen() {
 						/>
 					)}
 
-					<MotiView
-						from={{ opacity: 0, translateY: 20 }}
-						animate={{ opacity: 1, translateY: 0 }}
-						transition={{ delay: 600, type: "timing", duration: 500 }}
-						style={styles.footer}
+						<MotiView
+							from={{ opacity: 0, translateY: 20 }}
+							animate={{ opacity: 1, translateY: 0 }}
+							transition={{ delay: 600, type: "timing", duration: 500 }}
+							style={styles.footer}
 					>
 						<Button
 							mode="contained"
@@ -283,7 +289,8 @@ export default function ExerciseTimeScreen() {
 							TIẾP TỤC
 						</Button>
 					</MotiView>
-				</View>
+					</View>
+				</ScrollView>
 			</SafeAreaView>
 		</View>
 	);
@@ -296,8 +303,10 @@ const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
 	},
+	scrollContent: {
+		paddingBottom: 28,
+	},
 	content: {
-		flex: 1,
 		paddingHorizontal: 24,
 	},
 	header: {
@@ -386,7 +395,7 @@ const styles = StyleSheet.create({
 		right: 12,
 	},
 	timeSection: {
-		flex: 1,
+		marginBottom: 16,
 	},
 	timeCard: {
 		backgroundColor: "#FFFFFF",
@@ -445,7 +454,8 @@ const styles = StyleSheet.create({
 		marginLeft: 8,
 	},
 	footer: {
-		paddingVertical: 20,
+		paddingTop: 8,
+		paddingBottom: 20,
 	},
 	button: {
 		borderRadius: 20,

@@ -1,4 +1,4 @@
-# GEMINI.md - TheraHome Backend
+# GEMINI.md - TheraHOME Backend
 
 ## Tech Stack
 - **Runtime**: Node.js

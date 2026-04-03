@@ -3,26 +3,30 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { Button, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { ArrowLeft, MessageSquareText, Star } from 'lucide-react-native';
+import { ArrowLeft, Lock, MessageSquareText, Star } from 'lucide-react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { api } from '@/services/api';
+import { useAuthStore } from '@/stores/authStore';
+import { getOwnedDeviceIds } from '@/utils/ownedDevices';
 
 const PRODUCT_IMAGES: Record<string, any> = {
   'theraneck.png': require('../assets/theraneck.png'),
   'theraback.png': require('../assets/theraback.png'),
   ech: require('../assets/theraneck.png'),
   rung: require('../assets/theraback.png'),
+};
+
+const PRODUCT_DESCRIPTIONS: Record<string, string> = {
+  ech: 'Thiết bị hỗ trợ cải thiện vùng cổ vai gáy, phù hợp cho người ngồi nhiều và hay mỏi cổ.',
+  rung: 'Thiết bị hỗ trợ thư giãn và giảm căng cứng vùng lưng, phù hợp cho nhu cầu phục hồi cơ sâu.',
 };
 
 type TherapyProduct = {
@@ -33,98 +37,132 @@ type TherapyProduct = {
   is_active?: boolean;
 };
 
-type ProductAssessment = {
+type ProductReview = {
   id: string;
   product_id: string;
+  author_name: string;
   rating: number;
-  comment: string;
+  content: string;
+  badge?: string;
+  scope?: 'public' | 'private';
+  is_mine?: boolean;
+  created_at: string;
+  updated_at: string;
+  product?: TherapyProduct | null;
 };
 
-type DraftState = Record<string, { rating: number; comment: string; assessmentId?: string }>;
+type ReviewDraft = {
+  rating: number;
+  content: string;
+};
+
+const REVIEWABLE_KEYS = new Set(['ech', 'rung']);
+
+function getReviewableProducts(products: TherapyProduct[]) {
+  const filtered = products.filter((item) => REVIEWABLE_KEYS.has(item.key.toLowerCase()));
+  return filtered.length > 0 ? filtered : products;
+}
+
+function buildDrafts(products: TherapyProduct[], reviews: ProductReview[]) {
+  const result: Record<string, ReviewDraft> = {};
+
+  getReviewableProducts(products).forEach((product) => {
+    const personalReview = reviews.find(
+      (item) => item.product_id === product.id && (item.is_mine || item.scope === 'private'),
+    );
+
+    result[product.id] = {
+      rating: personalReview?.rating ?? 5,
+      content: personalReview?.content ?? '',
+    };
+  });
+
+  return result;
+}
 
 export default function ProductAssessmentsScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const user = useAuthStore((state) => state.user);
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [products, setProducts] = useState<TherapyProduct[]>([]);
-  const [drafts, setDrafts] = useState<DraftState>({});
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, ReviewDraft>>({});
   const [loading, setLoading] = useState(true);
   const [savingProductId, setSavingProductId] = useState<string | null>(null);
 
+  const isSignedIn = !!user && user.id !== 'guest';
+  const ownedDeviceIds = useMemo(() => getOwnedDeviceIds(user?.owned_devices || []), [user?.owned_devices]);
+
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [user?.id]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const productData = await api.get<TherapyProduct[]>('/products');
-      let assessmentData: any[] = [];
 
+      let reviewData: ProductReview[] = [];
       try {
-        assessmentData = await api.get<any[]>('/product-assessments/mine');
-      } catch (assessmentError) {
-        console.error('Load my assessments error:', assessmentError);
+        reviewData = isSignedIn
+          ? await api.get<ProductReview[]>('/product-reviews/my-feed')
+          : await api.get<ProductReview[]>('/product-reviews');
+      } catch (error) {
+        if (isSignedIn) {
+          console.warn('Falling back to public product reviews:', error);
+          reviewData = await api.get<ProductReview[]>('/product-reviews');
+        } else {
+          throw error;
+        }
       }
 
       setProducts(productData || []);
-
-      const nextDrafts: DraftState = {};
-      (productData || []).forEach((product) => {
-        const existing = (assessmentData || []).find((item) => item.product_id === product.id);
-        nextDrafts[product.id] = {
-          rating: existing?.rating || 0,
-          comment: existing?.comment || '',
-          assessmentId: existing?.id,
-        };
-      });
-
-      setDrafts(nextDrafts);
+      setReviews(reviewData || []);
+      setDrafts(buildDrafts(productData || [], reviewData || []));
     } catch (error) {
-      console.error('Load product assessments error:', error);
-      Alert.alert('Lỗi', 'Không thể tải danh sách sản phẩm để đánh giá.');
+      console.error('Load product reviews error:', error);
+      Alert.alert('Lỗi', 'Không thể tải đánh giá sản phẩm lúc này.');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateDraft = (productId: string, patch: Partial<DraftState[string]>) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [productId]: {
-        rating: prev[productId]?.rating || 0,
-        comment: prev[productId]?.comment || '',
-        assessmentId: prev[productId]?.assessmentId,
-        ...patch,
-      },
-    }));
+  const reviewableProducts = useMemo(() => getReviewableProducts(products), [products]);
+
+  const canReviewProduct = (product: TherapyProduct) => {
+    const normalizedKey = product.key?.trim().toLowerCase();
+    if (normalizedKey === 'ech') return ownedDeviceIds.includes('neck_device');
+    if (normalizedKey === 'rung') return ownedDeviceIds.includes('back_device');
+    return false;
   };
 
-  const handleSave = async (product: TherapyProduct) => {
-    const draft = drafts[product.id];
-    if (!draft || draft.rating < 1) {
-      Alert.alert('Thiếu đánh giá', `Hãy chọn số sao cho ${product.name}.`);
-      return;
-    }
+  const sections = useMemo(() => {
+    return reviewableProducts.map((product) => {
+      const productReviews = reviews
+        .filter((item) => item.product_id === product.id)
+        .sort((a, b) => {
+          return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+        });
 
-    try {
-      setSavingProductId(product.id);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const saved = await api.post('/product-assessments', {
-        product_id: product.id,
-        rating: draft.rating,
-        comment: draft.comment.trim(),
-      });
+      const personalReview =
+        productReviews.find((item) => item.is_mine || item.scope === 'private') || null;
+      const publicReviews = productReviews.filter((item) => !(item.is_mine || item.scope === 'private'));
 
-      updateDraft(product.id, { assessmentId: saved?.id });
-      Alert.alert('Đã lưu', `Đánh giá của bạn cho ${product.name} đã được cập nhật.`);
-    } catch (error) {
-      console.error('Save product assessment error:', error);
-      Alert.alert('Lỗi', 'Không thể lưu đánh giá lúc này.');
-    } finally {
-      setSavingProductId(null);
-    }
-  };
+      const averageRating =
+        publicReviews.length > 0
+          ? publicReviews.reduce((sum, item) => sum + item.rating, 0) / publicReviews.length
+          : 0;
+
+      return {
+        product,
+        publicReviews,
+        personalReview,
+        averageRating,
+        canWriteReview: isSignedIn && canReviewProduct(product),
+      };
+    });
+  }, [isSignedIn, reviewableProducts, reviews, ownedDeviceIds]);
 
   const resolveImageSource = (product: TherapyProduct) => {
     if (product.key && PRODUCT_IMAGES[product.key]) {
@@ -134,13 +172,129 @@ export default function ProductAssessmentsScreen() {
     return null;
   };
 
+  const resolveProductDescription = (product: TherapyProduct) => {
+    if (product.key && PRODUCT_DESCRIPTIONS[product.key]) {
+      return PRODUCT_DESCRIPTIONS[product.key];
+    }
+
+    return 'Đánh giá tổng hợp công khai dành cho tất cả người dùng của ứng dụng.';
+  };
+
+  const updateDraft = (productId: string, patch: Partial<ReviewDraft>) => {
+    setDrafts((prev) => ({
+      ...prev,
+      [productId]: {
+        rating: prev[productId]?.rating ?? 5,
+        content: prev[productId]?.content ?? '',
+        ...patch,
+      },
+    }));
+  };
+
+  const handleSaveMyReview = async (product: TherapyProduct) => {
+    if (!isSignedIn) {
+      Alert.alert('Cần đăng nhập', 'Hãy đăng nhập và kích hoạt thiết bị để viết đánh giá của riêng bạn.');
+      return;
+    }
+
+    if (!canReviewProduct(product)) {
+      Alert.alert('Chưa đủ điều kiện', 'Bạn chỉ có thể đánh giá sản phẩm đã kích hoạt.');
+      return;
+    }
+
+    const draft = drafts[product.id] || { rating: 5, content: '' };
+
+    if (!draft.content.trim()) {
+      Alert.alert('Thiếu nội dung', 'Vui lòng nhập cảm nhận của bạn về sản phẩm.');
+      return;
+    }
+
+    if (!Number.isFinite(draft.rating) || draft.rating < 1 || draft.rating > 5) {
+      Alert.alert('Số sao không hợp lệ', 'Vui lòng chọn số sao từ 1 đến 5.');
+      return;
+    }
+
+    try {
+      setSavingProductId(product.id);
+      await api.post('/product-reviews/my', {
+        product_id: product.id,
+        rating: draft.rating,
+        content: draft.content.trim(),
+      });
+
+      Alert.alert('Thành công', 'Đã lưu đánh giá riêng của bạn.');
+      await loadData();
+    } catch (error: any) {
+      console.error('Save my product review error:', error);
+      Alert.alert('Lỗi', error?.message || 'Không thể lưu đánh giá của bạn lúc này.');
+    } finally {
+      setSavingProductId(null);
+    }
+  };
+
+  const renderStars = (rating: number, size = 16) => {
+    return (
+      <View style={styles.ratingRow}>
+        {[1, 2, 3, 4, 5].map((star) => {
+          const active = star <= Math.round(rating);
+          return (
+            <Star
+              key={`${rating}-${star}`}
+              size={size}
+              color={active ? '#F59E0B' : colors.border}
+              fill={active ? '#F59E0B' : 'transparent'}
+            />
+          );
+        })}
+      </View>
+    );
+  };
+
+  const renderEditableStars = (productId: string) => {
+    const rating = drafts[productId]?.rating ?? 5;
+
+    return (
+      <View style={styles.editableStarsRow}>
+        {[1, 2, 3, 4, 5].map((star) => {
+          const active = star <= rating;
+          return (
+            <TouchableOpacity
+              key={`${productId}-${star}`}
+              onPress={() => updateDraft(productId, { rating: star })}
+              activeOpacity={0.8}
+              style={styles.starButton}
+            >
+              <Star
+                size={24}
+                color={active ? '#F59E0B' : colors.border}
+                fill={active ? '#F59E0B' : 'transparent'}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const formatDateTime = (value: string) => {
+    return new Date(value).toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.8}>
           <ArrowLeft size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Đánh giá của bạn</Text>
+        <Text style={styles.headerTitle}>Đánh giá sản phẩm</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -148,29 +302,28 @@ export default function ProductAssessmentsScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.heroCard}>
           <View style={styles.heroBadge}>
             <MessageSquareText size={16} color={colors.primary} />
-            <Text style={styles.heroBadgeText}>Cá nhân</Text>
+            <Text style={styles.heroBadgeText}>Công khai + Riêng tư</Text>
           </View>
-          <Text style={styles.heroTitle}>Đánh giá thiết bị của riêng bạn</Text>
+          <Text style={styles.heroTitle}>Cảm nhận về thiết bị từ TheraHOME và từ chính bạn</Text>
           <Text style={styles.heroDescription}>
-            Chỉ bạn mới thấy các đánh giá này. Hãy lưu lại cảm nhận thực tế để theo dõi thiết bị
-            nào phù hợp nhất với cơ thể mình.
+            Bạn luôn xem được đánh giá công khai của admin. Nếu đã kích hoạt sản phẩm, bạn cũng có thể
+            tự viết đánh giá riêng và chỉ chính bạn mới nhìn thấy phần đó.
           </Text>
         </View>
 
         {loading ? (
           <View style={styles.stateWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.stateText}>Đang tải dữ liệu...</Text>
+            <Text style={styles.stateText}>Đang tải đánh giá sản phẩm...</Text>
           </View>
         ) : (
-          products.map((product) => {
-            const draft = drafts[product.id] || { rating: 0, comment: '' };
+          sections.map(({ product, publicReviews, personalReview, averageRating, canWriteReview }) => {
             const imageSource = resolveImageSource(product);
+            const draft = drafts[product.id] || { rating: 5, content: '' };
 
             return (
               <View key={product.id} style={styles.card}>
@@ -187,55 +340,102 @@ export default function ProductAssessmentsScreen() {
                 <View style={styles.cardBody}>
                   <Text style={styles.categoryText}>{product.key}</Text>
                   <Text style={styles.productName}>{product.name}</Text>
-                  <Text style={styles.productDescription}>
-                    {product.purchase_link
-                      ? `Liên kết mua: ${product.purchase_link}`
-                      : 'Sản phẩm cải thiện dành riêng cho bạn. Hãy lưu lại cảm nhận thực tế sau khi sử dụng.'}
-                  </Text>
+                  <Text style={styles.productDescription}>{resolveProductDescription(product)}</Text>
 
-                  <View style={styles.ratingRow}>
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = star <= draft.rating;
-                      return (
-                        <Pressable
-                          key={star}
-                          onPress={() => {
-                            Haptics.selectionAsync();
-                            updateDraft(product.id, { rating: star });
-                          }}
-                          style={styles.starButton}
-                        >
-                          <Star
-                            size={24}
-                            color={active ? '#F59E0B' : colors.border}
-                            fill={active ? '#F59E0B' : 'transparent'}
-                          />
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.summaryCard}>
+                    <View>
+                      <Text style={styles.summaryValue}>
+                        {publicReviews.length > 0 ? averageRating.toFixed(1) : '0.0'}
+                      </Text>
+                      <Text style={styles.summaryLabel}>Điểm trung bình từ admin</Text>
+                    </View>
+                    <View style={styles.summaryRight}>
+                      {renderStars(averageRating || 0, 18)}
+                      <Text style={styles.summaryMeta}>{publicReviews.length} đánh giá công khai</Text>
+                    </View>
                   </View>
 
-                  <TextInput
-                    value={draft.comment}
-                    onChangeText={(value) => updateDraft(product.id, { comment: value })}
-                    placeholder="Viết cảm nhận của bạn về sản phẩm..."
-                    placeholderTextColor={colors.textSecondary}
-                    multiline
-                    style={styles.commentInput}
-                  />
+                  {canWriteReview ? (
+                    <View style={styles.privateReviewCard}>
+                      <Text style={styles.privateReviewTitle}>Đánh giá của bạn</Text>
+                      <Text style={styles.privateReviewHint}>Chỉ bạn mới xem được đánh giá này.</Text>
+                      {personalReview ? (
+                        <Text style={styles.privateReviewMeta}>
+                          Cập nhật lần cuối: {formatDateTime(personalReview.updated_at || personalReview.created_at)}
+                        </Text>
+                      ) : null}
 
-                  <Button
-                    mode="contained"
-                    onPress={() => handleSave(product)}
-                    loading={savingProductId === product.id}
-                    disabled={savingProductId === product.id}
-                    buttonColor={colors.primary}
-                    style={styles.saveButton}
-                    contentStyle={styles.saveButtonContent}
-                    labelStyle={styles.saveButtonLabel}
-                  >
-                    {draft.assessmentId ? 'Cập nhật đánh giá' : 'Lưu đánh giá'}
-                  </Button>
+                      {renderEditableStars(product.id)}
+
+                      <TextInput
+                        mode="outlined"
+                        multiline
+                        value={draft.content}
+                        onChangeText={(text) => updateDraft(product.id, { content: text })}
+                        placeholder="Chia sẻ cảm nhận thật của bạn sau khi sử dụng..."
+                        style={styles.privateReviewInput}
+                        contentStyle={styles.privateReviewInputContent}
+                        outlineColor={colors.border}
+                        activeOutlineColor={colors.primary}
+                        textColor={colors.text}
+                      />
+
+                      <Button
+                        mode="contained"
+                        onPress={() => handleSaveMyReview(product)}
+                        loading={savingProductId === product.id}
+                        disabled={savingProductId === product.id}
+                        buttonColor={colors.primary}
+                        style={styles.privateReviewButton}
+                        contentStyle={styles.privateReviewButtonContent}
+                        labelStyle={styles.privateReviewButtonLabel}
+                      >
+                        {personalReview ? 'Cập nhật đánh giá của bạn' : 'Lưu đánh giá của bạn'}
+                      </Button>
+                    </View>
+                  ) : (
+                    <View style={styles.privateReviewLockedCard}>
+                      <View style={styles.privateReviewLockedIcon}>
+                        <Lock size={18} color={colors.primary} />
+                      </View>
+                      <Text style={styles.privateReviewLockedTitle}>Đánh giá riêng cho bạn</Text>
+                      <Text style={styles.privateReviewLockedText}>
+                        {isSignedIn
+                          ? `Hãy kích hoạt ${product.name} để viết đánh giá riêng của bạn.`
+                          : 'Đăng nhập và kích hoạt sản phẩm để tự viết đánh giá riêng của bạn.'}
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={styles.publicReviewSectionTitle}>Đánh giá từ admin</Text>
+
+                  {publicReviews.length === 0 ? (
+                    <View style={styles.emptyReviewCard}>
+                      <Text style={styles.emptyReviewText}>
+                        Admin chưa thêm đánh giá nào cho {product.name}.
+                      </Text>
+                    </View>
+                  ) : (
+                    publicReviews.map((review) => (
+                      <View key={review.id} style={styles.reviewItem}>
+                        <View style={styles.reviewHeader}>
+                          <View style={styles.reviewHeaderMain}>
+                            <Text style={styles.reviewAuthor}>{review.author_name}</Text>
+                            {renderStars(review.rating)}
+                          </View>
+                          {review.badge ? (
+                            <View style={styles.badgePill}>
+                              <Text style={styles.badgePillText}>{review.badge}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text style={styles.reviewContent}>{review.content}</Text>
+                        <Text style={styles.reviewDate}>
+                          {formatDateTime(review.updated_at || review.created_at)}
+                        </Text>
+                      </View>
+                    ))
+                  )}
                 </View>
               </View>
             );
@@ -376,7 +576,7 @@ const createStyles = (colors: any, isDark: boolean) =>
     cardBody: {
       paddingHorizontal: 20,
       paddingVertical: 18,
-      gap: 10,
+      gap: 12,
     },
     categoryText: {
       fontSize: 13,
@@ -395,37 +595,178 @@ const createStyles = (colors: any, isDark: boolean) =>
       lineHeight: 22,
       color: colors.textSecondary,
     },
+    summaryCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderRadius: 22,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 16,
+    },
+    summaryValue: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    summaryLabel: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    summaryRight: {
+      alignItems: 'flex-end',
+      gap: 6,
+    },
+    summaryMeta: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
     ratingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginTop: 4,
+      gap: 6,
+    },
+    editableStarsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
     },
     starButton: {
-      paddingVertical: 4,
+      padding: 2,
     },
-    commentInput: {
-      minHeight: 110,
+    privateReviewCard: {
+      borderRadius: 22,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      backgroundColor: `${colors.primary}08`,
+      borderWidth: 1,
+      borderColor: `${colors.primary}22`,
+      gap: 12,
+    },
+    privateReviewTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    privateReviewHint: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    privateReviewMeta: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    privateReviewInput: {
+      backgroundColor: colors.surface,
+    },
+    privateReviewInputContent: {
+      minHeight: 100,
+      color: colors.text,
+    },
+    privateReviewButton: {
+      borderRadius: 16,
+    },
+    privateReviewButtonContent: {
+      height: 50,
+    },
+    privateReviewButtonLabel: {
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    privateReviewLockedCard: {
+      borderRadius: 22,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
       borderWidth: 1,
       borderColor: colors.border,
+      gap: 10,
+    },
+    privateReviewLockedIcon: {
+      width: 36,
+      height: 36,
       borderRadius: 18,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      color: colors.text,
-      textAlignVertical: 'top',
-      backgroundColor: colors.background,
-      fontSize: 15,
-      lineHeight: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: `${colors.primary}14`,
     },
-    saveButton: {
-      borderRadius: 999,
-      marginTop: 4,
-    },
-    saveButtonContent: {
-      minHeight: 52,
-    },
-    saveButtonLabel: {
+    privateReviewLockedTitle: {
       fontSize: 16,
       fontWeight: '700',
+      color: colors.text,
+    },
+    privateReviewLockedText: {
+      fontSize: 14,
+      lineHeight: 22,
+      color: colors.textSecondary,
+    },
+    publicReviewSectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+      marginTop: 4,
+    },
+    emptyReviewCard: {
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyReviewText: {
+      fontSize: 14,
+      lineHeight: 22,
+      color: colors.textSecondary,
+    },
+    reviewItem: {
+      borderRadius: 22,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 10,
+    },
+    reviewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 12,
+    },
+    reviewHeaderMain: {
+      flex: 1,
+      gap: 6,
+    },
+    reviewAuthor: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    badgePill: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: `${colors.primary}14`,
+      borderWidth: 1,
+      borderColor: `${colors.primary}24`,
+    },
+    badgePillText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    reviewContent: {
+      fontSize: 14,
+      lineHeight: 22,
+      color: colors.textSecondary,
+    },
+    reviewDate: {
+      fontSize: 12,
+      color: colors.textSecondary,
     },
   });

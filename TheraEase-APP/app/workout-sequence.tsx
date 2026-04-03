@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+  PanResponder,
+  useWindowDimensions,
+} from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, CheckCircle } from 'lucide-react-native';
 import { Video, ResizeMode } from 'expo-av';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import YoutubePlayer, { YoutubeIframeRef } from 'react-native-youtube-iframe';
 import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/services/api';
 import { getVideoByPlanDay } from '@/services/videos';
@@ -14,8 +21,6 @@ import { colors } from '@/utils/theme';
 import * as Haptics from 'expo-haptics';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { extractYouTubeVideoId, isYouTubeUrl } from '@/utils/youtube';
-
-const { width, height } = Dimensions.get('window');
 
 interface Exercise {
   id: string;
@@ -29,15 +34,21 @@ export default function WorkoutSequenceScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user, setUser } = useAuthStore();
+  const { width, height } = useWindowDimensions();
+  const youtubePlayerRef = useRef<YoutubeIframeRef | null>(null);
+  const videoRef = useRef<Video | null>(null);
   
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoRef, setVideoRef] = useState<Video | null>(null);
-
   const [dayVideoUrl, setDayVideoUrl] = useState<string | null>(null);
   const [isStartingCountdown, setIsStartingCountdown] = useState(false);
   const [videoCompleted, setVideoCompleted] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [progressTrackWidth, setProgressTrackWidth] = useState(0);
+  const [pendingSeekTime, setPendingSeekTime] = useState<number | null>(null);
+  const [showPlaybackControls, setShowPlaybackControls] = useState(true);
 
   useEffect(() => {
     loadExercises();
@@ -136,7 +147,133 @@ export default function WorkoutSequenceScreen() {
   const handleVideoEnd = () => {
     setIsPlaying(false);
     setVideoCompleted(true);
+    setShowPlaybackControls(true);
   };
+
+  const currentExercise = exercises[0] ?? null;
+  const currentVideoUrl = dayVideoUrl || currentExercise?.video_url || '';
+  const isYoutubeVideo = currentVideoUrl ? isYouTubeUrl(currentVideoUrl) : false;
+  const youtubeVideoId =
+    isYoutubeVideo && currentVideoUrl ? extractYouTubeVideoId(currentVideoUrl) : null;
+  const displayTime = pendingSeekTime ?? currentTime;
+  const progressRatio = duration > 0 ? Math.min(1, Math.max(0, displayTime / duration)) : 0;
+  const playerWidth = width;
+  const playerHeight = height;
+
+  const formatSeconds = (value: number) => {
+    const safeValue = Math.max(0, Math.floor(value));
+    const minutes = Math.floor(safeValue / 60);
+    const seconds = safeValue % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const clampToDuration = (value: number) => {
+    if (duration <= 0) {
+      return 0;
+    }
+
+    return Math.min(Math.max(value, 0), duration);
+  };
+
+  const seekToTime = async (seconds: number) => {
+    const target = clampToDuration(seconds);
+    setPendingSeekTime(null);
+    setCurrentTime(target);
+
+    try {
+      if (isYoutubeVideo) {
+        youtubePlayerRef.current?.seekTo(target, true);
+        return;
+      }
+
+      if (videoRef.current) {
+        await videoRef.current.setPositionAsync(target * 1000);
+      }
+    } catch (error) {
+      console.warn('Seek video error:', error);
+    }
+  };
+
+  const handleSeekBy = (deltaSeconds: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void seekToTime(displayTime + deltaSeconds);
+  };
+
+  const getSeekTimeFromLocation = (locationX: number) => {
+    if (!progressTrackWidth || duration <= 0) {
+      return currentTime;
+    }
+
+    const ratio = Math.min(Math.max(locationX / progressTrackWidth, 0), 1);
+    return ratio * duration;
+  };
+
+  const seekResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => duration > 0,
+        onMoveShouldSetPanResponder: () => duration > 0,
+        onPanResponderGrant: (event) => {
+          setPendingSeekTime(getSeekTimeFromLocation(event.nativeEvent.locationX));
+        },
+        onPanResponderMove: (event) => {
+          setPendingSeekTime(getSeekTimeFromLocation(event.nativeEvent.locationX));
+        },
+        onPanResponderRelease: (event) => {
+          const target = getSeekTimeFromLocation(event.nativeEvent.locationX);
+          void seekToTime(target);
+        },
+        onPanResponderTerminate: () => {
+          setPendingSeekTime(null);
+        },
+      }),
+    [currentTime, duration, progressTrackWidth],
+  );
+
+  useEffect(() => {
+    if (!isYoutubeVideo || !youtubeVideoId) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncYoutubeProgress = async () => {
+      if (!youtubePlayerRef.current) {
+        return;
+      }
+
+      try {
+        const [nextDuration, nextCurrentTime] = await Promise.all([
+          youtubePlayerRef.current.getDuration(),
+          youtubePlayerRef.current.getCurrentTime(),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (Number.isFinite(nextDuration) && nextDuration > 0) {
+          setDuration(nextDuration);
+        }
+
+        if (pendingSeekTime === null && Number.isFinite(nextCurrentTime)) {
+          setCurrentTime(nextCurrentTime);
+        }
+      } catch (error) {
+        console.warn('Sync YouTube progress error:', error);
+      }
+    };
+
+    void syncYoutubeProgress();
+    const intervalId = setInterval(() => {
+      void syncYoutubeProgress();
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [isYoutubeVideo, pendingSeekTime, youtubeVideoId]);
 
   if (loading) {
     return (
@@ -146,7 +283,7 @@ export default function WorkoutSequenceScreen() {
     );
   }
 
-  if (exercises.length === 0) {
+  if (!currentExercise) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
@@ -159,18 +296,17 @@ export default function WorkoutSequenceScreen() {
     );
   }
 
-  const currentExercise = exercises[0];
-  const currentVideoUrl = dayVideoUrl || currentExercise.video_url;
-  const isYoutubeVideo = isYouTubeUrl(currentVideoUrl);
-  const youtubeVideoId = isYoutubeVideo ? extractYouTubeVideoId(currentVideoUrl) : null;
-
   return (
     <SafeAreaView style={styles.container} edges={[]}>
-      <View style={styles.videoContainer}>
+      <Pressable
+        style={styles.videoContainer}
+        onPress={() => setShowPlaybackControls((prev) => !prev)}
+      >
         {isYoutubeVideo && youtubeVideoId ? (
           <YoutubePlayer
-            height={width}
-            width={height}
+            ref={youtubePlayerRef}
+            height={playerHeight}
+            width={playerWidth}
             play={isPlaying}
             videoId={youtubeVideoId}
             onChangeState={(state: string) => {
@@ -192,16 +328,27 @@ export default function WorkoutSequenceScreen() {
           />
         ) : (
           <Video
-            ref={(ref) => setVideoRef(ref)}
+            ref={videoRef}
             source={{ uri: currentVideoUrl }}
-            style={styles.video}
+            style={[styles.video, { width: playerWidth, height: playerHeight }]}
             resizeMode={ResizeMode.CONTAIN}
             shouldPlay={isPlaying}
             isLooping={false}
             onPlaybackStatusUpdate={(status: any) => {
-              if (status.isLoaded && status.isPlaying) {
+              if (!status.isLoaded) {
+                return;
+              }
+
+              if (status.isPlaying) {
                 maybeStartPersonalizedPlanCountdown();
               }
+
+              if (pendingSeekTime === null) {
+                setCurrentTime((status.positionMillis || 0) / 1000);
+              }
+
+              setDuration((status.durationMillis || 0) / 1000);
+
               if (status.didJustFinish) {
                 handleVideoEnd();
               }
@@ -209,46 +356,118 @@ export default function WorkoutSequenceScreen() {
           />
         )}
 
-        {/* Controls Overlay */}
-          <View style={styles.overlay}>
-            {/* Header */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.8)', 'transparent']}
-              style={styles.header}
+        <View style={styles.overlay} pointerEvents="box-none">
+          <View style={styles.header} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={(event) => {
+                event.stopPropagation();
+                router.back();
+              }}
+              activeOpacity={0.85}
             >
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-              >
-                <ArrowLeft size={28} color="#FFF" />
-              </TouchableOpacity>
-              
+              <ArrowLeft size={28} color="#FFF" />
+            </TouchableOpacity>
+
+            {showPlaybackControls && (
               <View style={styles.headerInfo}>
                 <Text style={styles.headerTitle}>{currentExercise.title}</Text>
               </View>
-            </LinearGradient>
-
-
-
-            {/* Bottom Controls */}
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.8)']}
-              style={styles.bottomControls}
-            >
-              {videoCompleted && (
-                <TouchableOpacity
-                  style={styles.nextButton}
-                  onPress={handleComplete}
-                >
-                  <>
-                    <CheckCircle size={24} color="#FFF" />
-                    <Text style={styles.nextButtonText}>Xong</Text>
-                  </>
-                </TouchableOpacity>
-              )}
-            </LinearGradient>
+            )}
           </View>
-      </View>
+
+          {showPlaybackControls && (
+            <Pressable
+              style={styles.controlsDock}
+              onPress={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <LinearGradient
+                colors={['rgba(17,24,39,0.86)', 'rgba(17,24,39,0.72)']}
+                style={styles.controlsCard}
+              >
+                <View style={styles.progressInfo}>
+                  <Text style={styles.timeBadgeText}>{formatSeconds(displayTime)}</Text>
+                  <Text style={styles.timeBadgeText}>{formatSeconds(duration)}</Text>
+                </View>
+
+                <View
+                  style={styles.progressTrack}
+                  onLayout={(event) => {
+                    setProgressTrackWidth(event.nativeEvent.layout.width);
+                  }}
+                  {...seekResponder.panHandlers}
+                >
+                  <View style={styles.progressTrackBackground} />
+                  <View
+                    style={[
+                      styles.progressTrackFill,
+                      { width: `${progressRatio * 100}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.progressThumb,
+                      {
+                        left:
+                          progressTrackWidth > 0
+                            ? Math.max(
+                                0,
+                                Math.min(
+                                  progressTrackWidth - 18,
+                                  progressRatio * progressTrackWidth - 9,
+                                ),
+                              )
+                            : 0,
+                      },
+                    ]}
+                  />
+                </View>
+
+                <View style={styles.seekButtonsRow}>
+                  <TouchableOpacity
+                    style={styles.seekButton}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      handleSeekBy(-10);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.seekButtonText}>-10s</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.seekButton}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      handleSeekBy(10);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.seekButtonText}>+10s</Text>
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          )}
+
+          {videoCompleted && (
+            <TouchableOpacity
+              style={styles.nextButton}
+              onPress={(event) => {
+                event.stopPropagation();
+                handleComplete();
+              }}
+              activeOpacity={0.9}
+            >
+              <>
+                <CheckCircle size={22} color="#FFF" />
+                <Text style={styles.nextButtonText}>Xong</Text>
+              </>
+            </TouchableOpacity>
+          )}
+        </View>
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -283,49 +502,131 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   video: {
-    width: height, // Landscape: use height as width
-    height: width, // Landscape: use width as height
+    backgroundColor: '#000',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
   },
   header: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    left: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 40,
+    justifyContent: 'space-between',
   },
   backButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    backgroundColor: 'rgba(0, 0, 0, 0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   headerInfo: {
-    flex: 1,
     marginLeft: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    maxWidth: '74%',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#FFF',
-    marginBottom: 4,
   },
-
-  bottomControls: {
-    padding: 20,
-    paddingBottom: 40,
+  controlsDock: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 24,
+    alignItems: 'center',
+  },
+  controlsCard: {
+    width: '70%',
+    minWidth: 280,
+    maxWidth: 520,
+    borderRadius: 26,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.26,
+    shadowRadius: 22,
+    elevation: 8,
+  },
+  timeBadgeText: {
+    fontSize: 14,
+    color: '#FFF',
+    fontWeight: '600',
+    opacity: 0.92,
   },
   progressInfo: {
-    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  progressText: {
-    fontSize: 16,
-    color: '#FFF',
-    textAlign: 'center',
-    fontWeight: '600',
+  progressTrack: {
+    width: '100%',
+    height: 24,
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  progressTrackBackground: {
+    width: '100%',
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  progressTrackFill: {
+    position: 'absolute',
+    left: 0,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+  },
+  progressThumb: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: colors.primary,
+  },
+  seekButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  seekButton: {
+    minWidth: 82,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    backgroundColor: 'rgba(31,41,55,0.84)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  seekButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   nextButton: {
+    position: 'absolute',
+    right: 24,
+    bottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -25,6 +25,7 @@ app.use('/api/ai-prompts', require('./routes/aiPrompts'));
 app.use('/api/knowledge', require('./routes/knowledge'));
 app.use('/api/postures', require('./routes/postures'));
 app.use('/api/products', require('./routes/products'));
+app.use('/api/product-reviews', require('./routes/productReviews'));
 app.use('/api/product-instances', require('./routes/productInstances'));
 app.use('/api/product-assessments', require('./routes/productAssessments'));
 app.use('/api/codes', require('./routes/codes'));
@@ -48,7 +49,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
   app.listen(PORT, () => {
-    console.log(`TheraHome Backend running on port ${PORT}`);
+    console.log(`TheraHOME Backend running on port ${PORT}`);
   });
 }
 

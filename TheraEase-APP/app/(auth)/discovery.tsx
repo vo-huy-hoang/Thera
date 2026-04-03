@@ -7,28 +7,169 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
+const GRAPHIC_SIZE = Math.min(width * 0.84, 320);
 
-const HERO_PORTRAIT = 'https://randomuser.me/api/portraits/men/32.jpg';
+type DiscoveryPortrait = {
+  id: string;
+  uri: string;
+  sizeRatio: number;
+  topRatio: number;
+  leftRatio: number;
+  delay: number;
+  accentColor: string;
+  prominent?: boolean;
+};
+
+const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
+  {
+    id: 'top-left',
+    uri: 'https://randomuser.me/api/portraits/women/32.jpg',
+    sizeRatio: 0.16,
+    topRatio: 0.04,
+    leftRatio: 0.24,
+    delay: 120,
+    accentColor: '#D6E7FF',
+  },
+  {
+    id: 'top-center',
+    uri: 'https://randomuser.me/api/portraits/men/41.jpg',
+    sizeRatio: 0.21,
+    topRatio: 0.01,
+    leftRatio: 0.395,
+    delay: 180,
+    accentColor: '#8EB6FF',
+  },
+  {
+    id: 'top-right',
+    uri: 'https://randomuser.me/api/portraits/women/64.jpg',
+    sizeRatio: 0.16,
+    topRatio: 0.04,
+    leftRatio: 0.6,
+    delay: 240,
+    accentColor: '#D6E7FF',
+  },
+  {
+    id: 'left-far',
+    uri: 'https://randomuser.me/api/portraits/men/12.jpg',
+    sizeRatio: 0.12,
+    topRatio: 0.35,
+    leftRatio: 0.03,
+    delay: 300,
+    accentColor: '#E8F1FF',
+  },
+  {
+    id: 'left-main',
+    uri: 'https://randomuser.me/api/portraits/women/25.jpg',
+    sizeRatio: 0.2,
+    topRatio: 0.29,
+    leftRatio: 0.17,
+    delay: 360,
+    accentColor: '#5D96F7',
+  },
+  {
+    id: 'center',
+    uri: 'https://randomuser.me/api/portraits/men/32.jpg',
+    sizeRatio: 0.31,
+    topRatio: 0.24,
+    leftRatio: 0.345,
+    delay: 420,
+    accentColor: '#1F5CE6',
+    prominent: true,
+  },
+  {
+    id: 'right-main',
+    uri: 'https://randomuser.me/api/portraits/women/11.jpg',
+    sizeRatio: 0.2,
+    topRatio: 0.29,
+    leftRatio: 0.625,
+    delay: 480,
+    accentColor: '#5D96F7',
+  },
+  {
+    id: 'right-far',
+    uri: 'https://randomuser.me/api/portraits/men/71.jpg',
+    sizeRatio: 0.12,
+    topRatio: 0.35,
+    leftRatio: 0.85,
+    delay: 540,
+    accentColor: '#E8F1FF',
+  },
+  {
+    id: 'bottom-left',
+    uri: 'https://randomuser.me/api/portraits/women/68.jpg',
+    sizeRatio: 0.16,
+    topRatio: 0.62,
+    leftRatio: 0.24,
+    delay: 600,
+    accentColor: '#D6E7FF',
+  },
+  {
+    id: 'bottom-center',
+    uri: 'https://randomuser.me/api/portraits/men/58.jpg',
+    sizeRatio: 0.21,
+    topRatio: 0.58,
+    leftRatio: 0.395,
+    delay: 660,
+    accentColor: '#8EB6FF',
+  },
+  {
+    id: 'bottom-right',
+    uri: 'https://randomuser.me/api/portraits/women/45.jpg',
+    sizeRatio: 0.16,
+    topRatio: 0.62,
+    leftRatio: 0.6,
+    delay: 720,
+    accentColor: '#D6E7FF',
+  },
+];
 
 export default function DiscoveryScreen() {
   const router = useRouter();
+  const clusterSize = GRAPHIC_SIZE;
 
   const handleNext = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.replace('/(auth)/reviews');
   };
 
-  const Portrait = ({ size, delay, uri }: { size: number; delay: number; uri: string }) => (
+  const Portrait = ({
+    size,
+    delay,
+    uri,
+    top,
+    left,
+    accentColor,
+    prominent = false,
+  }: {
+    size: number;
+    delay: number;
+    uri: string;
+    top: number;
+    left: number;
+    accentColor: string;
+    prominent?: boolean;
+  }) => (
     <Animated.View 
       entering={ZoomIn.delay(delay).duration(600).springify()}
       style={[
-        styles.avatarCircle, 
-        { width: size, height: size, borderRadius: size / 2 }
+        styles.avatarCircle,
+        {
+          top,
+          left,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          padding: prominent ? 6 : 4,
+          backgroundColor: accentColor,
+          shadowOpacity: prominent ? 0.22 : 0.12,
+          shadowRadius: prominent ? 18 : 12,
+          elevation: prominent ? 10 : 4,
+        },
       ]}
     >
       <Image
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: size / 2 }}
+        style={styles.avatarImage}
         resizeMode="cover"
       />
     </Animated.View>
@@ -46,7 +187,26 @@ export default function DiscoveryScreen() {
 
         {/* Avatar Graphic Section */}
         <View style={styles.graphicContainer}>
-          <Portrait size={176} uri={HERO_PORTRAIT} delay={180} />
+          <View
+            style={[
+              styles.portraitCluster,
+              { width: clusterSize, height: clusterSize * 0.92 },
+            ]}
+          >
+            <View style={styles.centerGlow} />
+            {DISCOVERY_PORTRAITS.map((portrait) => (
+              <Portrait
+                key={portrait.id}
+                size={clusterSize * portrait.sizeRatio}
+                uri={portrait.uri}
+                delay={portrait.delay}
+                top={clusterSize * portrait.topRatio}
+                left={clusterSize * portrait.leftRatio}
+                accentColor={portrait.accentColor}
+                prominent={portrait.prominent}
+              />
+            ))}
+          </View>
         </View>
 
         <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.textSection}>
@@ -92,19 +252,37 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   graphicContainer: {
-    height: 240,
+    height: 300,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  portraitCluster: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerGlow: {
+    position: 'absolute',
+    top: '27%',
+    left: '31%',
+    width: '38%',
+    aspectRatio: 1,
+    borderRadius: 999,
+    backgroundColor: 'rgba(59, 130, 246, 0.14)',
+  },
   avatarCircle: {
+    position: 'absolute',
     overflow: 'hidden',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
     shadowColor: '#1D4ED8',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
     shadowRadius: 12,
-    elevation: 4,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 999,
   },
   textSection: {
     marginTop: 8,

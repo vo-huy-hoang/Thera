@@ -1,34 +1,113 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
 	View,
 	StyleSheet,
 	Dimensions,
 	Image,
 	TouchableOpacity,
+	Alert,
 } from "react-native";
-import { Text, Button } from "react-native-paper";
+import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 import Animated, {
 	FadeInUp,
 	FadeInDown,
 	ZoomIn,
 } from "react-native-reanimated";
+import { api } from "@/services/api";
 
 const { width } = Dimensions.get("window");
 
+interface Product {
+	id: string;
+	key: string;
+	name: string;
+	purchase_link: string;
+}
+
+const normalizeText = (value: string) =>
+	value
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase();
+
+const isNeckProduct = (product: Product) => {
+	const key = normalizeText(product.key);
+	const name = normalizeText(product.name);
+
+	return (
+		key === "ech" ||
+		key.includes("neck") ||
+		name.includes("theraneck") ||
+		name.includes("neck") ||
+		name.includes("vung co") ||
+		name.includes("co vai")
+	);
+};
+
 export default function DeviceOfferScreen() {
 	const router = useRouter();
+	const [products, setProducts] = useState<Product[]>([]);
+	const [loadingProductLink, setLoadingProductLink] = useState(true);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		const loadProducts = async () => {
+			try {
+				const data = await api.get<Product[]>("/products");
+				if (isMounted) {
+					setProducts(data || []);
+				}
+			} catch (error) {
+				console.warn("Load products error:", error);
+			} finally {
+				if (isMounted) {
+					setLoadingProductLink(false);
+				}
+			}
+		};
+
+		void loadProducts();
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
+	const offerProduct = useMemo(
+		() => products.find(isNeckProduct) ?? null,
+		[products],
+	);
 
 	const handleAlreadyHave = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		router.replace("/(auth)/activate-device");
+		router.replace("/(auth)/login");
 	};
 
 	const handleGetOffer = async () => {
 		await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-		router.replace("/(auth)/special-offer");
+		const purchaseLink = offerProduct?.purchase_link?.trim();
+
+		if (!purchaseLink) {
+			Alert.alert(
+				"Chưa có link ưu đãi",
+				"Sản phẩm này chưa được cấu hình link mua trong admin.",
+			);
+			return;
+		}
+
+		try {
+			await WebBrowser.openBrowserAsync(purchaseLink);
+		} catch (error) {
+			Alert.alert(
+				"Không mở được link",
+				"Vui lòng kiểm tra lại link sản phẩm trong admin.",
+			);
+		}
 	};
 
 	return (
@@ -50,7 +129,7 @@ export default function DeviceOfferScreen() {
 						/>
 					</Animated.View>
 					<Text style={styles.productName}>
-						Thiết bị hỗ trợ cải thiện cổ TheraNECK
+						Thiết bị hỗ trợ cải thiện cổ {offerProduct?.name || "TheraNECK"}
 					</Text>
 				</View>
 
@@ -66,12 +145,18 @@ export default function DeviceOfferScreen() {
 						<Text style={styles.haveText}>Đã có</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity
-						onPress={handleGetOffer}
-						style={styles.offerButton}
+						<TouchableOpacity
+							onPress={handleGetOffer}
+							disabled={loadingProductLink}
+							style={[
+								styles.offerButton,
+								loadingProductLink && styles.offerButtonDisabled,
+						]}
 						activeOpacity={0.8}
 					>
-						<Text style={styles.offerText}>Nhận ưu đãi</Text>
+						<Text style={styles.offerText}>
+							{loadingProductLink ? "Đang tải ưu đãi..." : "Nhận ưu đãi"}
+						</Text>
 					</TouchableOpacity>
 				</Animated.View>
 			</View>
@@ -154,5 +239,8 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "bold",
 		color: "#FFFFFF",
+	},
+	offerButtonDisabled: {
+		opacity: 0.8,
 	},
 });

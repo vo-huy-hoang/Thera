@@ -2,18 +2,27 @@ import React, { useMemo } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text, Button } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Sparkles } from "lucide-react-native";
+import { Check, Sparkles } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuthStore } from "@/stores/authStore";
+import { getOwnedDeviceIds } from "@/utils/ownedDevices";
 
 const NECK_IMAGE = require("../../assets/theraneck.png");
 const BACK_IMAGE = require("../../assets/theraback.png");
 
 export default function ExploreScreen() {
 	const router = useRouter();
+	const user = useAuthStore((state) => state.user);
 	const { colors, isDark } = useTheme();
 	const insets = useSafeAreaInsets();
+	const ownedDeviceIds = useMemo(
+		() => getOwnedDeviceIds(user?.owned_devices || []),
+		[user?.owned_devices],
+	);
+	const hasNeckDevice = ownedDeviceIds.includes("neck_device");
+	const hasBackDevice = ownedDeviceIds.includes("back_device");
 	const styles = useMemo(
 		() => createStyles(colors, isDark, insets.top),
 		[colors, isDark, insets.top],
@@ -58,24 +67,31 @@ export default function ExploreScreen() {
 								Thiết bị hỗ trợ cải thiện vùng cổ vai gáy, phù hợp cho người ngồi
 								nhiều và hay mỏi cổ.
 							</Text>
-							<View style={styles.actionRow}>
-								<Pressable
-									onPress={() => {
-										Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-										router.push("/(auth)/activate-device");
-									}}
-								>
-									<Text style={styles.actionPill}>Thêm</Text>
-								</Pressable>
-								<Pressable
-									onPress={() => {
-										Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-										router.push("/(auth)/special-offer");
-									}}
-								>
-									<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
-								</Pressable>
-							</View>
+							{hasNeckDevice ? (
+								<View style={styles.activatedBadge}>
+									<Check size={16} color="#FFFFFF" strokeWidth={3} />
+									<Text style={styles.activatedBadgeText}>Đã kích hoạt</Text>
+								</View>
+							) : (
+								<View style={styles.actionRow}>
+									<Pressable
+										onPress={() => {
+											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+											router.push("/(auth)/activate-device");
+										}}
+									>
+										<Text style={styles.actionPill}>Thêm</Text>
+									</Pressable>
+									<Pressable
+										onPress={() => {
+											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+											router.push("/(auth)/special-offer");
+										}}
+									>
+										<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+									</Pressable>
+								</View>
+							)}
 						</View>
 					</View>
 				</View>
@@ -97,24 +113,31 @@ export default function ExploreScreen() {
 								Thiết bị hỗ trợ thư giãn và giảm căng cứng vùng lưng, phù hợp
 								cho nhu cầu phục hồi cơ sâu.
 							</Text>
-							<View style={styles.actionRow}>
-								<Pressable
-									onPress={() => {
-										Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-										router.push("/(auth)/activate-device");
-									}}
-								>
-									<Text style={styles.actionPill}>Thêm</Text>
-								</Pressable>
-								<Pressable
-									onPress={() => {
-										Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-										router.push("/(auth)/special-offer");
-									}}
-								>
-									<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
-								</Pressable>
-							</View>
+							{hasBackDevice ? (
+								<View style={styles.activatedBadge}>
+									<Check size={16} color="#FFFFFF" strokeWidth={3} />
+									<Text style={styles.activatedBadgeText}>Đã kích hoạt</Text>
+								</View>
+							) : (
+								<View style={styles.actionRow}>
+									<Pressable
+										onPress={() => {
+											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+											router.push("/(auth)/activate-device");
+										}}
+									>
+										<Text style={styles.actionPill}>Thêm</Text>
+									</Pressable>
+									<Pressable
+										onPress={() => {
+											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+											router.push("/(auth)/special-offer");
+										}}
+									>
+										<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
+									</Pressable>
+								</View>
+							)}
 						</View>
 					</View>
 				</View>
@@ -130,7 +153,7 @@ export default function ExploreScreen() {
 					contentStyle={styles.reviewButtonContent}
 					labelStyle={styles.reviewButtonLabel}
 				>
-					Xem đánh giá của bạn
+					Xem đánh giá sản phẩm
 				</Button>
 			</ScrollView>
 		</View>
@@ -262,6 +285,21 @@ const createStyles = (colors: any, isDark: boolean, topInset: number) =>
 			fontSize: 13,
 			fontWeight: "700",
 			overflow: "hidden",
+		},
+		activatedBadge: {
+			alignSelf: "flex-start",
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 8,
+			paddingHorizontal: 16,
+			paddingVertical: 10,
+			borderRadius: 999,
+			backgroundColor: "#16A34A",
+		},
+		activatedBadgeText: {
+			fontSize: 13,
+			fontWeight: "800",
+			color: "#FFFFFF",
 		},
 		actionPill: {
 			paddingHorizontal: 14,

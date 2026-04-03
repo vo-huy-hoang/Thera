@@ -1,6 +1,6 @@
 export default {
   expo: {
-    name: "TheraHome",
+    name: "TheraHOME",
     slug: "therahome-app",
     version: "1.0.0",
     orientation: "portrait",

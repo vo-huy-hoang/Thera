@@ -26,7 +26,7 @@ async function seedData() {
   if (!adminExists) {
     await User.create({
       email: process.env.ADMIN_EMAIL || 'admin@theraease.vn',
-      full_name: 'Admin TheraHome',
+      full_name: 'Admin TheraHOME',
       role: 'admin',
       password: process.env.ADMIN_PASSWORD || 'admin123',
     });
@@ -49,7 +49,7 @@ async function seedData() {
       },
       {
         prompt_type: 'chatbot',
-        system_prompt: 'Bạn là trợ lý sức khỏe AI của TheraHome, chuyên về giảm đau cổ, vai, lưng. Hãy trả lời câu hỏi một cách chuyên nghiệp nhưng dễ hiểu. Luôn trả lời bằng tiếng Việt. Khuyến khích người dùng tập trị liệu đều đặn.',
+        system_prompt: 'Bạn là trợ lý sức khỏe AI của TheraHOME, chuyên về giảm đau cổ, vai, lưng. Hãy trả lời câu hỏi một cách chuyên nghiệp nhưng dễ hiểu. Luôn trả lời bằng tiếng Việt. Khuyến khích người dùng tập trị liệu đều đặn.',
         temperature: 0.7,
         max_tokens: 800,
         model: 'llama-3.3-70b-versatile',
@@ -167,9 +167,9 @@ async function seedData() {
   const planCount = await WorkoutPlan.countDocuments();
   if (planCount === 0) {
     const plan = await WorkoutPlan.create({
-      title: 'Lộ trình trị liệu cổ 7 ngày',
-      description: 'Lộ trình tập luyện 7 ngày giúp giảm đau cổ hiệu quả cho người mới bắt đầu',
-      duration_days: 7,
+      title: 'Lộ trình trị liệu cổ 14 ngày',
+      description: 'Lộ trình tập luyện 14 ngày giúp giảm đau cổ hiệu quả cho người mới bắt đầu',
+      duration_days: 14,
       target_area: 'neck',
       difficulty: 'easy',
       is_pro: false,
@@ -180,7 +180,7 @@ async function seedData() {
     const exercises = await Exercise.find({ category: { $in: ['neck', 'shoulder'] } }).limit(2);
     if (exercises.length > 0) {
       const planExercises = [];
-      for (let day = 1; day <= 7; day++) {
+      for (let day = 1; day <= 14; day++) {
         exercises.forEach((ex, idx) => {
           planExercises.push({
             plan_id: plan._id,

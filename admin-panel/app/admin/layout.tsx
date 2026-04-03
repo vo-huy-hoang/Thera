@@ -16,7 +16,9 @@ import {
 	Accessibility,
 	Key,
 	MessageSquare,
+	Star,
 	Film,
+	Package,
 	LogOut,
 	Menu,
 	X,
@@ -37,6 +39,8 @@ const menuItems = [
 	{ icon: Film, label: "Videos", href: "/admin/videos" },
 	// { icon: Key, label: 'Activation Codes', href: '/admin/codes' },
 	{ icon: QrCode, label: "Mã Sản Phẩm", href: "/admin/product-instances" },
+	{ icon: Package, label: "Sản Phẩm", href: "/admin/products" },
+	{ icon: Star, label: "Đánh Giá", href: "/admin/product-reviews" },
 ];
 
 export default function AdminLayout({

@@ -319,7 +319,7 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.proDialogTitle}>Kích hoạt PRO</Text>
             <Text style={styles.dialogText}>
-              Nhập mã kích hoạt từ sản phẩm TheraHome của bạn
+              Nhập mã kích hoạt từ sản phẩm TheraHOME của bạn
             </Text>
             <TextInput
               label="Mã kích hoạt"
