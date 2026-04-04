@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Dimensions, Image } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeInDown, ZoomIn, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, withDelay, Easing } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 const GRAPHIC_SIZE = Math.min(width * 0.84, 320);
@@ -23,7 +23,7 @@ type DiscoveryPortrait = {
 const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   {
     id: 'top-left',
-    uri: 'https://randomuser.me/api/portraits/women/32.jpg',
+    uri: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
     sizeRatio: 0.16,
     topRatio: 0.04,
     leftRatio: 0.24,
@@ -32,7 +32,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'top-center',
-    uri: 'https://randomuser.me/api/portraits/men/41.jpg',
+    uri: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop',
     sizeRatio: 0.21,
     topRatio: 0.01,
     leftRatio: 0.395,
@@ -41,7 +41,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'top-right',
-    uri: 'https://randomuser.me/api/portraits/women/64.jpg',
+    uri: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop',
     sizeRatio: 0.16,
     topRatio: 0.04,
     leftRatio: 0.6,
@@ -50,7 +50,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'left-far',
-    uri: 'https://randomuser.me/api/portraits/men/12.jpg',
+    uri: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop',
     sizeRatio: 0.12,
     topRatio: 0.35,
     leftRatio: 0.03,
@@ -59,7 +59,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'left-main',
-    uri: 'https://randomuser.me/api/portraits/women/25.jpg',
+    uri: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&fit=crop',
     sizeRatio: 0.2,
     topRatio: 0.29,
     leftRatio: 0.17,
@@ -78,7 +78,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'right-main',
-    uri: 'https://randomuser.me/api/portraits/women/11.jpg',
+    uri: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
     sizeRatio: 0.2,
     topRatio: 0.29,
     leftRatio: 0.625,
@@ -87,7 +87,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'right-far',
-    uri: 'https://randomuser.me/api/portraits/men/71.jpg',
+    uri: 'https://images.unsplash.com/photo-1488161628813-04466f872be2?w=200&h=200&fit=crop',
     sizeRatio: 0.12,
     topRatio: 0.35,
     leftRatio: 0.85,
@@ -96,7 +96,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'bottom-left',
-    uri: 'https://randomuser.me/api/portraits/women/68.jpg',
+    uri: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200&h=200&fit=crop',
     sizeRatio: 0.16,
     topRatio: 0.62,
     leftRatio: 0.24,
@@ -105,7 +105,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'bottom-center',
-    uri: 'https://randomuser.me/api/portraits/men/58.jpg',
+    uri: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop',
     sizeRatio: 0.21,
     topRatio: 0.58,
     leftRatio: 0.395,
@@ -114,7 +114,7 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
   },
   {
     id: 'bottom-right',
-    uri: 'https://randomuser.me/api/portraits/women/45.jpg',
+    uri: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=200&h=200&fit=crop',
     sizeRatio: 0.16,
     topRatio: 0.62,
     leftRatio: 0.6,
@@ -126,6 +126,26 @@ const DISCOVERY_PORTRAITS: DiscoveryPortrait[] = [
 export default function DiscoveryScreen() {
   const router = useRouter();
   const clusterSize = GRAPHIC_SIZE;
+  const gap = 50; // Spacing between the end of one cluster and the start of the next
+  const repeatWidth = clusterSize + gap;
+  const translateX = useSharedValue(0);
+
+  useEffect(() => {
+    // Scroll endlessly to the left from 0 to -repeatWidth
+    translateX.value = withRepeat(
+      withTiming(-repeatWidth, { duration: 18000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const marqueeStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+      flexDirection: 'row',
+      width: repeatWidth * 2, // Holds two identical clusters side-by-side
+    };
+  });
 
   const handleNext = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -148,31 +168,81 @@ export default function DiscoveryScreen() {
     left: number;
     accentColor: string;
     prominent?: boolean;
-  }) => (
-    <Animated.View 
-      entering={ZoomIn.delay(delay).duration(600).springify()}
-      style={[
-        styles.avatarCircle,
-        {
-          top,
-          left,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          padding: prominent ? 6 : 4,
-          backgroundColor: accentColor,
-          shadowOpacity: prominent ? 0.22 : 0.12,
-          shadowRadius: prominent ? 18 : 12,
-          elevation: prominent ? 10 : 4,
-        },
-      ]}
-    >
-      <Image
-        source={{ uri }}
-        style={styles.avatarImage}
-        resizeMode="cover"
-      />
-    </Animated.View>
+  }) => {
+    const floatY = useSharedValue(0);
+
+    useEffect(() => {
+      // Calculate a slight variance in animation duration for a natural effect
+      const duration = 2000 + (delay % 500);
+      const distance = prominent ? -12 : -7;
+      
+      floatY.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(distance, { duration }),
+            withTiming(0, { duration })
+          ),
+          -1,
+          true
+        )
+      );
+    }, [delay, prominent]);
+
+    const floatAnimatedStyle = useAnimatedStyle(() => ({
+      transform: [{ translateY: floatY.value }],
+    }));
+
+    return (
+      <Animated.View 
+        entering={ZoomIn.delay(delay).duration(600).springify()}
+        style={{ position: 'absolute', top, left, width: size, height: size }}
+      >
+        <Animated.View 
+          style={[
+            styles.avatarCircle,
+            {
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              borderRadius: size / 2,
+              padding: prominent ? 6 : 4,
+              backgroundColor: accentColor,
+              shadowOpacity: prominent ? 0.22 : 0.12,
+              shadowRadius: prominent ? 18 : 12,
+              elevation: prominent ? 10 : 4,
+            },
+            floatAnimatedStyle
+          ]}
+        >
+          <Image
+            source={{ uri }}
+            style={styles.avatarImage}
+            resizeMode="cover"
+          />
+        </Animated.View>
+      </Animated.View>
+    );
+  };
+
+  // Extract cluster into a component to duplicate it easily for the marquee
+  const ClusterView = () => (
+    <View style={[styles.portraitCluster, { width: clusterSize, height: clusterSize * 0.92, marginRight: gap }]}>
+      <View style={styles.centerGlow} />
+      {DISCOVERY_PORTRAITS.map((portrait) => (
+        <Portrait
+          key={portrait.id}
+          size={clusterSize * portrait.sizeRatio}
+          uri={portrait.uri}
+          delay={portrait.delay}
+          top={clusterSize * portrait.topRatio}
+          left={clusterSize * portrait.leftRatio}
+          accentColor={portrait.accentColor}
+          prominent={portrait.prominent}
+        />
+      ))}
+    </View>
   );
 
   return (
@@ -187,26 +257,10 @@ export default function DiscoveryScreen() {
 
         {/* Avatar Graphic Section */}
         <View style={styles.graphicContainer}>
-          <View
-            style={[
-              styles.portraitCluster,
-              { width: clusterSize, height: clusterSize * 0.92 },
-            ]}
-          >
-            <View style={styles.centerGlow} />
-            {DISCOVERY_PORTRAITS.map((portrait) => (
-              <Portrait
-                key={portrait.id}
-                size={clusterSize * portrait.sizeRatio}
-                uri={portrait.uri}
-                delay={portrait.delay}
-                top={clusterSize * portrait.topRatio}
-                left={clusterSize * portrait.leftRatio}
-                accentColor={portrait.accentColor}
-                prominent={portrait.prominent}
-              />
-            ))}
-          </View>
+          <Animated.View style={marqueeStyle}>
+            <ClusterView />
+            <ClusterView />
+          </Animated.View>
         </View>
 
         <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.textSection}>
@@ -223,6 +277,7 @@ export default function DiscoveryScreen() {
             contentStyle={styles.buttonContent}
             labelStyle={styles.buttonLabel}
             buttonColor="#3B82F6"
+            uppercase={false}
           >
             TIẾP TỤC
           </Button>
@@ -319,5 +374,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    lineHeight: 28,
   },
 });

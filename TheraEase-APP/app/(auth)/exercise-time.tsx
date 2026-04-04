@@ -252,7 +252,7 @@ export default function ExerciseTimeScreen() {
 										<Info size={16} color="#4F46E5" />
 										<Text style={styles.recommendationText}>
 											Khuyên dùng: Luyện tập vào{" "}
-											<Text style={{ fontWeight: "700" }}>20:00 - 22:00</Text>{" "}
+											<Text style={{ fontWeight: "700", color: "#4338CA" }}>20:00 - 22:00</Text>{" "}
 											giúp cơ thể phục hồi tốt nhất trước khi ngủ.
 										</Text>
 									</View>
@@ -268,6 +268,8 @@ export default function ExerciseTimeScreen() {
 							is24Hour={true}
 							display="spinner"
 							onChange={onTimeChange}
+							textColor="#000000"
+							themeVariant="light"
 						/>
 					)}
 
@@ -285,6 +287,7 @@ export default function ExerciseTimeScreen() {
 							contentStyle={styles.buttonContent}
 							labelStyle={styles.buttonLabel}
 							buttonColor={colors.primary}
+							uppercase={false}
 						>
 							TIẾP TỤC
 						</Button>
@@ -477,5 +480,6 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		fontWeight: "800",
 		letterSpacing: 1,
+		lineHeight: 26,
 	},
 });

@@ -215,6 +215,7 @@ export default function ReviewsScreen() {
 						contentStyle={styles.buttonContent}
 						labelStyle={styles.buttonLabel}
 						buttonColor="#3B82F6"
+						uppercase={false}
 					>
 						TIẾP TỤC
 					</Button>
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
 	},
 	content: {
 		flex: 1,
-		paddingTop: 60,
+		paddingTop: 40,
 	},
 	title: {
 		fontSize: 26,
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
 		color: "#000000",
 		textAlign: "center",
 		lineHeight: 34,
-		marginBottom: 30,
+		marginBottom: 15,
 		paddingHorizontal: 20,
 	},
 	reviewsListContainer: {
@@ -348,8 +349,8 @@ const styles = StyleSheet.create({
 	},
 	footer: {
 		paddingHorizontal: 40,
-		marginBottom: 40,
-		marginTop: 20,
+		marginBottom: 20,
+		marginTop: 8,
 		alignItems: "center",
 	},
 	button: {
@@ -368,5 +369,6 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "bold",
 		color: "#FFFFFF",
+		lineHeight: 28,
 	},
 });
