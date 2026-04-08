@@ -46,6 +46,7 @@ type ProductReview = {
   badge?: string;
   scope?: 'public' | 'private';
   is_mine?: boolean;
+  reviewer_type?: 'admin' | 'user';
   created_at: string;
   updated_at: string;
   product?: TherapyProduct | null;
@@ -104,22 +105,18 @@ export default function ProductAssessmentsScreen() {
       const productData = await api.get<TherapyProduct[]>('/products');
 
       let reviewData: ProductReview[] = [];
-      try {
-        reviewData = isSignedIn
-          ? await api.get<ProductReview[]>('/product-reviews/my-feed')
-          : await api.get<ProductReview[]>('/product-reviews');
-      } catch (error) {
-        if (isSignedIn) {
-          console.warn('Falling back to public product reviews:', error);
-          reviewData = await api.get<ProductReview[]>('/product-reviews');
-        } else {
-          throw error;
+      if (isSignedIn) {
+        try {
+          reviewData = await api.get<ProductReview[]>('/product-reviews/my-feed');
+        } catch (error) {
+          console.warn('Unable to load personal product reviews:', error);
         }
       }
 
       setProducts(productData || []);
-      setReviews(reviewData || []);
-      setDrafts(buildDrafts(productData || [], reviewData || []));
+      const privateReviews = (reviewData || []).filter((item) => item.is_mine || item.scope === 'private');
+      setReviews(privateReviews);
+      setDrafts(buildDrafts(productData || [], privateReviews));
     } catch (error) {
       console.error('Load product reviews error:', error);
       Alert.alert('Lỗi', 'Không thể tải đánh giá sản phẩm lúc này.');
@@ -147,18 +144,10 @@ export default function ProductAssessmentsScreen() {
 
       const personalReview =
         productReviews.find((item) => item.is_mine || item.scope === 'private') || null;
-      const publicReviews = productReviews.filter((item) => !(item.is_mine || item.scope === 'private'));
-
-      const averageRating =
-        publicReviews.length > 0
-          ? publicReviews.reduce((sum, item) => sum + item.rating, 0) / publicReviews.length
-          : 0;
 
       return {
         product,
-        publicReviews,
         personalReview,
-        averageRating,
         canWriteReview: isSignedIn && canReviewProduct(product),
       };
     });
@@ -177,7 +166,7 @@ export default function ProductAssessmentsScreen() {
       return PRODUCT_DESCRIPTIONS[product.key];
     }
 
-    return 'Đánh giá tổng hợp công khai dành cho tất cả người dùng của ứng dụng.';
+    return 'Không gian riêng để bạn lưu lại cảm nhận sau khi sử dụng sản phẩm.';
   };
 
   const updateDraft = (productId: string, patch: Partial<ReviewDraft>) => {
@@ -306,12 +295,12 @@ export default function ProductAssessmentsScreen() {
         <View style={styles.heroCard}>
           <View style={styles.heroBadge}>
             <MessageSquareText size={16} color={colors.primary} />
-            <Text style={styles.heroBadgeText}>Công khai + Riêng tư</Text>
+            <Text style={styles.heroBadgeText}>Riêng tư cho bạn</Text>
           </View>
-          <Text style={styles.heroTitle}>Cảm nhận về thiết bị từ TheraHOME và từ chính bạn</Text>
+          <Text style={styles.heroTitle}>Lưu lại cảm nhận thật của bạn về từng thiết bị</Text>
           <Text style={styles.heroDescription}>
-            Bạn luôn xem được đánh giá công khai của admin. Nếu đã kích hoạt sản phẩm, bạn cũng có thể
-            tự viết đánh giá riêng và chỉ chính bạn mới nhìn thấy phần đó.
+            Khi đã kích hoạt sản phẩm, bạn có thể tự viết đánh giá và chỉ chính bạn mới nhìn thấy phần
+            này trong ứng dụng của mình.
           </Text>
         </View>
 
@@ -321,7 +310,7 @@ export default function ProductAssessmentsScreen() {
             <Text style={styles.stateText}>Đang tải đánh giá sản phẩm...</Text>
           </View>
         ) : (
-          sections.map(({ product, publicReviews, personalReview, averageRating, canWriteReview }) => {
+          sections.map(({ product, personalReview, canWriteReview }) => {
             const imageSource = resolveImageSource(product);
             const draft = drafts[product.id] || { rating: 5, content: '' };
 
@@ -342,22 +331,11 @@ export default function ProductAssessmentsScreen() {
                   <Text style={styles.productName}>{product.name}</Text>
                   <Text style={styles.productDescription}>{resolveProductDescription(product)}</Text>
 
-                  <View style={styles.summaryCard}>
-                    <View>
-                      <Text style={styles.summaryValue}>
-                        {publicReviews.length > 0 ? averageRating.toFixed(1) : '0.0'}
-                      </Text>
-                      <Text style={styles.summaryLabel}>Điểm trung bình từ admin</Text>
-                    </View>
-                    <View style={styles.summaryRight}>
-                      {renderStars(averageRating || 0, 18)}
-                      <Text style={styles.summaryMeta}>{publicReviews.length} đánh giá công khai</Text>
-                    </View>
-                  </View>
-
                   {canWriteReview ? (
                     <View style={styles.privateReviewCard}>
-                      <Text style={styles.privateReviewTitle}>Đánh giá của bạn</Text>
+                      <Text style={styles.privateReviewTitle}>
+                        {personalReview?.author_name?.trim() || 'Đánh giá của bạn'}
+                      </Text>
                       <Text style={styles.privateReviewHint}>Chỉ bạn mới xem được đánh giá này.</Text>
                       {personalReview ? (
                         <Text style={styles.privateReviewMeta}>
@@ -405,36 +383,6 @@ export default function ProductAssessmentsScreen() {
                           : 'Đăng nhập và kích hoạt sản phẩm để tự viết đánh giá riêng của bạn.'}
                       </Text>
                     </View>
-                  )}
-
-                  <Text style={styles.publicReviewSectionTitle}>Đánh giá từ admin</Text>
-
-                  {publicReviews.length === 0 ? (
-                    <View style={styles.emptyReviewCard}>
-                      <Text style={styles.emptyReviewText}>
-                        Admin chưa thêm đánh giá nào cho {product.name}.
-                      </Text>
-                    </View>
-                  ) : (
-                    publicReviews.map((review) => (
-                      <View key={review.id} style={styles.reviewItem}>
-                        <View style={styles.reviewHeader}>
-                          <View style={styles.reviewHeaderMain}>
-                            <Text style={styles.reviewAuthor}>{review.author_name}</Text>
-                            {renderStars(review.rating)}
-                          </View>
-                          {review.badge ? (
-                            <View style={styles.badgePill}>
-                              <Text style={styles.badgePillText}>{review.badge}</Text>
-                            </View>
-                          ) : null}
-                        </View>
-                        <Text style={styles.reviewContent}>{review.content}</Text>
-                        <Text style={styles.reviewDate}>
-                          {formatDateTime(review.updated_at || review.created_at)}
-                        </Text>
-                      </View>
-                    ))
                   )}
                 </View>
               </View>
@@ -595,35 +543,6 @@ const createStyles = (colors: any, isDark: boolean) =>
       lineHeight: 22,
       color: colors.textSecondary,
     },
-    summaryCard: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      borderRadius: 22,
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      gap: 16,
-    },
-    summaryValue: {
-      fontSize: 28,
-      fontWeight: '800',
-      color: colors.text,
-    },
-    summaryLabel: {
-      fontSize: 13,
-      color: colors.textSecondary,
-    },
-    summaryRight: {
-      alignItems: 'flex-end',
-      gap: 6,
-    },
-    summaryMeta: {
-      fontSize: 13,
-      color: colors.textSecondary,
-    },
     ratingRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -702,71 +621,6 @@ const createStyles = (colors: any, isDark: boolean) =>
     privateReviewLockedText: {
       fontSize: 14,
       lineHeight: 22,
-      color: colors.textSecondary,
-    },
-    publicReviewSectionTitle: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.text,
-      marginTop: 4,
-    },
-    emptyReviewCard: {
-      borderRadius: 20,
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    emptyReviewText: {
-      fontSize: 14,
-      lineHeight: 22,
-      color: colors.textSecondary,
-    },
-    reviewItem: {
-      borderRadius: 22,
-      paddingHorizontal: 16,
-      paddingVertical: 16,
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      gap: 10,
-    },
-    reviewHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: 12,
-    },
-    reviewHeaderMain: {
-      flex: 1,
-      gap: 6,
-    },
-    reviewAuthor: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    badgePill: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 999,
-      backgroundColor: `${colors.primary}14`,
-      borderWidth: 1,
-      borderColor: `${colors.primary}24`,
-    },
-    badgePillText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color: colors.primary,
-    },
-    reviewContent: {
-      fontSize: 14,
-      lineHeight: 22,
-      color: colors.textSecondary,
-    },
-    reviewDate: {
-      fontSize: 12,
       color: colors.textSecondary,
     },
   });

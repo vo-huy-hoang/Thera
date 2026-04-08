@@ -28,6 +28,7 @@ function serializeProductReview(item, viewerId = null) {
     badge: item.badge || '',
     scope,
     is_mine: normalizedViewerId !== null && normalizedViewerId === normalizedReviewUserId,
+    reviewer_type: scope === 'private' ? 'user' : 'admin',
     product:
       item.product_id && typeof item.product_id === 'object'
         ? {
@@ -216,6 +217,29 @@ router.get('/my-feed', protect, async (req, res) => {
     res.json(items.map((item) => serializeProductReview(item, req.user._id)));
   } catch (error) {
     console.error('Get user product review feed error:', error);
+    res.status(500).json({ error: 'Lỗi server' });
+  }
+});
+
+router.get('/admin-feed', protect, adminOnly, async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.query.product_id) {
+      filter.product_id = req.query.product_id;
+    }
+
+    if (req.query.scope === 'public' || req.query.scope === 'private') {
+      filter.scope = req.query.scope;
+    }
+
+    const items = await ProductReview.find(filter)
+      .populate('product_id')
+      .sort({ updated_at: -1, created_at: -1 });
+
+    res.json(items.map((item) => serializeProductReview(item, req.user._id)));
+  } catch (error) {
+    console.error('Get admin product review feed error:', error);
     res.status(500).json({ error: 'Lỗi server' });
   }
 });

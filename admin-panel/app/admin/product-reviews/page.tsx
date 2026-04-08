@@ -17,8 +17,11 @@ interface Product {
 interface ProductReviewItem {
   id: string;
   product_id: string;
+  author_name: string;
   rating: number;
   content: string;
+  scope?: 'public' | 'private';
+  reviewer_type?: 'admin' | 'user';
   created_at: string;
   updated_at: string;
   product?: Product | null;
@@ -68,7 +71,7 @@ export default function ProductReviewsPage() {
 
     return items.filter((item) => {
       const productLabel = item.product?.name || productMap.get(item.product_id)?.name || '';
-      return [productLabel, item.content]
+      return [productLabel, item.content, item.author_name]
         .join(' ')
         .toLowerCase()
         .includes(keyword);
@@ -80,7 +83,7 @@ export default function ProductReviewsPage() {
       setLoading(true);
       const [productData, reviewData] = await Promise.all([
         api.get<Product[]>('/products'),
-        api.get<ProductReviewItem[]>('/product-reviews'),
+        api.get<ProductReviewItem[]>('/product-reviews/admin-feed'),
       ]);
 
       setProducts(productData || []);
@@ -194,7 +197,7 @@ export default function ProductReviewsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Đánh Giá Sản Phẩm</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Review công khai cho TheraNECK (Ếch) và TheraBACK (Rung). Mọi user trong app đều sẽ thấy.
+            Admin tạo review công khai và đồng thời theo dõi được đánh giá riêng của từng người dùng.
           </p>
         </div>
         <button onClick={openCreateModal} className="btn btn-primary">
@@ -210,7 +213,7 @@ export default function ProductReviewsPage() {
             type="text"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Tìm theo sản phẩm hoặc nội dung..."
+            placeholder="Tìm theo sản phẩm, người dùng hoặc nội dung..."
             className="input pl-10"
           />
         </div>
@@ -222,6 +225,8 @@ export default function ProductReviewsPage() {
             <thead>
               <tr>
                 <th>Sản phẩm</th>
+                <th>Loại</th>
+                <th>Người đánh giá</th>
                 <th>Số sao</th>
                 <th>Nội dung</th>
                 <th>Ngày cập nhật</th>
@@ -237,6 +242,20 @@ export default function ProductReviewsPage() {
                     <td>
                       <div className="font-semibold text-slate-900">{product?.name || 'Không rõ sản phẩm'}</div>
                       <div className="text-xs text-slate-500 uppercase">{product?.key || '--'}</div>
+                    </td>
+                    <td>
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                          item.scope === 'private'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-blue-50 text-blue-700'
+                        }`}
+                      >
+                        {item.scope === 'private' ? 'Người dùng' : 'Admin công khai'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="font-semibold text-slate-900">{item.author_name || 'Ẩn danh'}</div>
                     </td>
                     <td>
                       <span className="inline-flex items-center gap-1 text-amber-500 font-semibold">
@@ -260,20 +279,26 @@ export default function ProductReviewsPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="text-blue-600 hover:text-blue-700"
-                          aria-label={`Sửa review ${product?.name || 'sản phẩm'}`}
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          onClick={() => setDeleteItem(item)}
-                          className="text-red-600 hover:text-red-700"
-                          aria-label={`Xóa review ${product?.name || 'sản phẩm'}`}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {item.scope === 'private' ? (
+                          <span className="text-sm text-slate-400">Chỉ xem</span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="text-blue-600 hover:text-blue-700"
+                              aria-label={`Sửa review ${product?.name || 'sản phẩm'}`}
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteItem(item)}
+                              className="text-red-600 hover:text-red-700"
+                              aria-label={`Xóa review ${product?.name || 'sản phẩm'}`}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

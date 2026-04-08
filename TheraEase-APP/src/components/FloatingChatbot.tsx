@@ -12,13 +12,13 @@ import {
 	PanResponder,
 	Alert,
 	Keyboard,
+	Image,
 } from "react-native";
 import { Text, TextInput, ActivityIndicator } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
 import {
 	X,
 	Send,
-	Bot,
 	User as UserIcon,
 	Sparkles,
 	Trash2,
@@ -32,12 +32,50 @@ import { colors } from "@/utils/theme";
 const { width, height } = Dimensions.get("window");
 const BUTTON_SIZE = 60;
 const EDGE_PADDING = 20;
+const CHATBOT_AVATAR = require("../../assets/Xin chao tôi là trợ lí.png");
 
 interface Message {
 	id: string;
 	role: "user" | "assistant";
 	content: string;
 	created_at: string;
+}
+
+function ChatbotAvatar({
+	size,
+	style,
+	imageStyle,
+}: {
+	size: number;
+	style?: any;
+	imageStyle?: any;
+}) {
+	return (
+		<View
+			style={[
+				styles.chatbotAvatarBase,
+				{
+					width: size,
+					height: size,
+					borderRadius: size / 2,
+				},
+				style,
+			]}
+		>
+			<Image
+				source={CHATBOT_AVATAR}
+				style={[
+					{
+						width: size + 18,
+						height: size + 18,
+						marginBottom: -5,
+					},
+					imageStyle,
+				]}
+				resizeMode="contain"
+			/>
+		</View>
+	);
 }
 
 export default function FloatingChatbot() {
@@ -327,7 +365,7 @@ export default function FloatingChatbot() {
 							colors={["#5B9BD5", "#4A7FB8"]}
 							style={styles.avatar}
 						>
-							<Bot size={16} color="#FFFFFF" />
+							<ChatbotAvatar size={24} imageStyle={styles.smallAvatarImage} />
 						</LinearGradient>
 					</View>
 				)}
@@ -409,7 +447,10 @@ export default function FloatingChatbot() {
 							colors={["#5B9BD5", "#4A7FB8"]}
 							style={styles.floatingButtonGradient}
 						>
-							<Bot size={28} color="#FFFFFF" strokeWidth={2.5} />
+							<ChatbotAvatar
+								size={BUTTON_SIZE - 8}
+								imageStyle={styles.floatingAvatarImage}
+							/>
 						</LinearGradient>
 					</RNAnimated.View>
 				</RNAnimated.View>
@@ -445,7 +486,11 @@ export default function FloatingChatbot() {
 								<View style={styles.header}>
 									<View style={styles.headerLeft}>
 										<View style={styles.headerIcon}>
-											<Bot size={24} color="#FFFFFF" />
+											<ChatbotAvatar
+												size={34}
+												style={styles.headerAvatar}
+												imageStyle={styles.headerAvatarImage}
+											/>
 										</View>
 										<View>
 											<Text style={styles.headerTitle}>TheraAI</Text>
@@ -507,7 +552,10 @@ export default function FloatingChatbot() {
 													colors={["#5B9BD5", "#4A7FB8"]}
 													style={styles.avatar}
 												>
-													<Bot size={16} color="#FFFFFF" />
+													<ChatbotAvatar
+														size={24}
+														imageStyle={styles.smallAvatarImage}
+													/>
 												</LinearGradient>
 											</View>
 											<View style={styles.loadingMessage}>
@@ -592,6 +640,19 @@ const styles = StyleSheet.create({
 		borderRadius: BUTTON_SIZE / 2,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	chatbotAvatarBase: {
+		overflow: "hidden",
+		alignItems: "center",
+		justifyContent: "flex-end",
+		backgroundColor: "rgba(255, 255, 255, 0.18)",
+		borderWidth: 2,
+		borderColor: "rgba(255, 255, 255, 0.92)",
+	},
+	floatingAvatarImage: {
+		width: BUTTON_SIZE + 26,
+		height: BUTTON_SIZE + 26,
+		marginBottom: -8,
 	},
 	greetingBubbleWrap: {
 		position: "absolute",
@@ -694,6 +755,15 @@ const styles = StyleSheet.create({
 		marginRight: 12,
 		backgroundColor: "rgba(255, 255, 255, 0.2)",
 	},
+	headerAvatar: {
+		borderWidth: 1.5,
+		backgroundColor: "rgba(255, 255, 255, 0.12)",
+	},
+	headerAvatarImage: {
+		width: 46,
+		height: 46,
+		marginBottom: -6,
+	},
 	headerTitle: {
 		fontSize: 18,
 		fontWeight: "bold",
@@ -758,6 +828,11 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		justifyContent: "center",
 		alignItems: "center",
+	},
+	smallAvatarImage: {
+		width: 34,
+		height: 34,
+		marginBottom: -4,
 	},
 	messageContainer: {
 		maxWidth: "75%",
