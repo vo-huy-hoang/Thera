@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import Svg, { Ellipse, Line, Polygon, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { View, StyleSheet, TouchableOpacity, Text, Switch } from 'react-native';
+import Body from 'react-native-body-highlighter';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/utils/theme';
 import { getPainAreaLabel, PAIN_AREAS } from '@/utils/constants';
@@ -10,54 +10,18 @@ interface BodyMapProps {
   onAreaPress: (area: string, level: number) => void;
 }
 
-type BodyRegion = {
-  id: string;
-  label: string;
-  points: string;
-};
-
-const VIEWBOX_WIDTH = 300;
-const VIEWBOX_HEIGHT = 440;
-const MAP_HEIGHT = 460;
-const REGION_IDLE_FILL = 'rgba(255,255,255,0.35)';
-const REGION_STROKE = 'rgba(255,255,255,0.7)';
-const BODY_STROKE = '#A0AEBE';
-
-const BODY_REGIONS: BodyRegion[] = [
-  {
-    id: PAIN_AREAS.NECK,
-    label: 'Cổ',
-    points: '122,88 178,88 190,115 150,148 110,115',
-  },
-  {
-    id: PAIN_AREAS.SHOULDER_LEFT,
-    label: 'Vai trái',
-    points: '110,115 82,148 74,198 124,188 150,148',
-  },
-  {
-    id: PAIN_AREAS.SHOULDER_RIGHT,
-    label: 'Vai phải',
-    points: '150,148 176,188 226,198 218,148 190,115',
-  },
-  {
-    id: PAIN_AREAS.UPPER_BACK,
-    label: 'Lưng trên',
-    points: '124,188 150,148 176,188 180,246 150,258 120,246',
-  },
-  {
-    id: PAIN_AREAS.MIDDLE_BACK,
-    label: 'Lưng giữa',
-    points: '120,246 150,258 180,246 184,320 150,334 116,320',
-  },
-  {
-    id: PAIN_AREAS.LOWER_BACK,
-    label: 'Lưng dưới',
-    points: '116,320 150,334 184,320 190,388 172,420 128,420 110,388',
-  },
+const BODY_REGIONS = [
+  { id: PAIN_AREAS.NECK, label: 'Cổ' },
+  { id: PAIN_AREAS.SHOULDER_LEFT, label: 'Vai trái' },
+  { id: PAIN_AREAS.SHOULDER_RIGHT, label: 'Vai phải' },
+  { id: PAIN_AREAS.UPPER_BACK, label: 'Lưng trên' },
+  { id: PAIN_AREAS.MIDDLE_BACK, label: 'Lưng giữa' },
+  { id: PAIN_AREAS.LOWER_BACK, label: 'Lưng dưới' },
 ];
 
 export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [isBack, setIsBack] = useState(false);
 
   const getPainColor = (level: number) => {
     if (level === 0) return colors.painNone;
@@ -66,11 +30,118 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
     return colors.painSevere;
   };
 
-  const hasAreaValue = (areaId: string) => Object.prototype.hasOwnProperty.call(selectedAreas, areaId);
+  const mapPartToArea = (slug: string, side?: string): string | null => {
+    if (slug === 'neck') return PAIN_AREAS.NECK;
+    if (slug === 'deltoids') return side === 'left' ? PAIN_AREAS.SHOULDER_LEFT : PAIN_AREAS.SHOULDER_RIGHT;
+    if (slug === 'upper-back') return PAIN_AREAS.UPPER_BACK;
+    if (slug === 'trapezius') return PAIN_AREAS.MIDDLE_BACK;
+    if (slug === 'lower-back') return PAIN_AREAS.LOWER_BACK;
+    
+    if (slug === 'biceps' || slug === 'triceps' || slug === 'forearm') return side === 'left' ? PAIN_AREAS.ARM_LEFT : PAIN_AREAS.ARM_RIGHT;
+    if (slug === 'hands') return side === 'left' ? PAIN_AREAS.HAND_LEFT : PAIN_AREAS.HAND_RIGHT;
+    
+    if (slug === 'quadriceps' || slug === 'hamstring' || slug === 'gluteal') return side === 'left' ? PAIN_AREAS.THIGH_LEFT : PAIN_AREAS.THIGH_RIGHT;
+    if (slug === 'calves' || slug === 'tibialis') return side === 'left' ? PAIN_AREAS.LEG_LEFT : PAIN_AREAS.LEG_RIGHT;
+    if (slug === 'feet') return side === 'left' ? PAIN_AREAS.FOOT_LEFT : PAIN_AREAS.FOOT_RIGHT;
+    
+    return null;
+  };
 
-  const handleAreaSelect = (area: string) => {
+  const getHighlighterData = () => {
+    const data: Array<{ slug: any, side?: 'left'|'right', color: string }> = [];
+    
+    // Chỉ lấy vùng đau duy nhất để hiển thị
+    const effectiveArea = selectedArea || Object.keys(selectedAreas).pop();
+
+    const addPart = (area: string, slug: string, side?: 'left'|'right') => {
+      // Chỉ tô màu cho hiệu ứng vùng đau DUY NHẤT này
+      if (area === effectiveArea && selectedAreas[area] !== undefined && !selectedArea) {
+        data.push({
+          slug,
+          side,
+          color: getPainColor(selectedAreas[area])
+        });
+      }
+    };
+
+    addPart(PAIN_AREAS.NECK, 'neck');
+    addPart(PAIN_AREAS.SHOULDER_LEFT, 'deltoids', 'left');
+    addPart(PAIN_AREAS.SHOULDER_RIGHT, 'deltoids', 'right');
+    addPart(PAIN_AREAS.UPPER_BACK, 'upper-back');
+    addPart(PAIN_AREAS.MIDDLE_BACK, 'trapezius');
+    addPart(PAIN_AREAS.LOWER_BACK, 'lower-back');
+    
+    addPart(PAIN_AREAS.ARM_LEFT, 'biceps', 'left');
+    addPart(PAIN_AREAS.ARM_LEFT, 'triceps', 'left');
+    addPart(PAIN_AREAS.ARM_LEFT, 'forearm', 'left');
+    
+    addPart(PAIN_AREAS.ARM_RIGHT, 'biceps', 'right');
+    addPart(PAIN_AREAS.ARM_RIGHT, 'triceps', 'right');
+    addPart(PAIN_AREAS.ARM_RIGHT, 'forearm', 'right');
+
+    addPart(PAIN_AREAS.HAND_LEFT, 'hands', 'left');
+    addPart(PAIN_AREAS.HAND_RIGHT, 'hands', 'right');
+    
+    addPart(PAIN_AREAS.THIGH_LEFT, 'quadriceps', 'left');
+    addPart(PAIN_AREAS.THIGH_LEFT, 'hamstring', 'left');
+    addPart(PAIN_AREAS.THIGH_LEFT, 'gluteal', 'left');
+
+    addPart(PAIN_AREAS.THIGH_RIGHT, 'quadriceps', 'right');
+    addPart(PAIN_AREAS.THIGH_RIGHT, 'hamstring', 'right');
+    addPart(PAIN_AREAS.THIGH_RIGHT, 'gluteal', 'right');
+
+    addPart(PAIN_AREAS.LEG_LEFT, 'calves', 'left');
+    addPart(PAIN_AREAS.LEG_LEFT, 'tibialis', 'left');
+
+    addPart(PAIN_AREAS.LEG_RIGHT, 'calves', 'right');
+    addPart(PAIN_AREAS.LEG_RIGHT, 'tibialis', 'right');
+
+    addPart(PAIN_AREAS.FOOT_LEFT, 'feet', 'left');
+    addPart(PAIN_AREAS.FOOT_RIGHT, 'feet', 'right');
+    
+    if (selectedArea) {
+      const highlight = (slug: string, side?: 'left'|'right') => {
+         const existing = data.find(d => d.slug === slug && (d.side === side || !side));
+         if (existing) {
+           existing.color = '#3B82F6';
+         } else {
+           data.push({ slug, side, color: '#93C5FD' });
+         }
+      };
+
+      switch(selectedArea) {
+        case PAIN_AREAS.NECK: highlight('neck'); break;
+        case PAIN_AREAS.SHOULDER_LEFT: highlight('deltoids', 'left'); break;
+        case PAIN_AREAS.SHOULDER_RIGHT: highlight('deltoids', 'right'); break;
+        case PAIN_AREAS.UPPER_BACK: highlight('upper-back'); break;
+        case PAIN_AREAS.MIDDLE_BACK: highlight('trapezius'); break;
+        case PAIN_AREAS.LOWER_BACK: highlight('lower-back'); break;
+        case PAIN_AREAS.ARM_LEFT: 
+          highlight('biceps', 'left'); highlight('triceps', 'left'); highlight('forearm', 'left'); break;
+        case PAIN_AREAS.ARM_RIGHT: 
+          highlight('biceps', 'right'); highlight('triceps', 'right'); highlight('forearm', 'right'); break;
+        case PAIN_AREAS.HAND_LEFT: highlight('hands', 'left'); break;
+        case PAIN_AREAS.HAND_RIGHT: highlight('hands', 'right'); break;
+        case PAIN_AREAS.THIGH_LEFT: 
+          highlight('quadriceps', 'left'); highlight('hamstring', 'left'); highlight('gluteal', 'left'); break;
+        case PAIN_AREAS.THIGH_RIGHT: 
+          highlight('quadriceps', 'right'); highlight('hamstring', 'right'); highlight('gluteal', 'right'); break;
+        case PAIN_AREAS.LEG_LEFT: highlight('calves', 'left'); highlight('tibialis', 'left'); break;
+        case PAIN_AREAS.LEG_RIGHT: highlight('calves', 'right'); highlight('tibialis', 'right'); break;
+        case PAIN_AREAS.FOOT_LEFT: highlight('feet', 'left'); break;
+        case PAIN_AREAS.FOOT_RIGHT: highlight('feet', 'right'); break;
+      }
+    }
+
+    return data;
+  };
+
+  const handleBodyPartPress = (part: any) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSelectedArea(area);
+    const mappedArea = mapPartToArea(part.slug, part.side);
+    if (mappedArea) {
+      setSelectedArea(mappedArea);
+    }
   };
 
   const handleLevelSelect = (level: number) => {
@@ -83,107 +154,69 @@ export default function BodyMap({ selectedAreas, onAreaPress }: BodyMapProps) {
   return (
     <View style={styles.container}>
       <View style={styles.mapCard}>
-        <Text style={styles.mapHint}>Chạm trực tiếp lên cổ, vai hoặc lưng để tô màu vùng đau.</Text>
+        <Text style={styles.mapHint}>Chạm vào cơ thể để chọn vùng bị đau và chọn mức độ.</Text>
 
         <View style={styles.mapCanvas}>
-          <Svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
-          >
-            <Defs>
-              <LinearGradient id="bodyGradient" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#E2E8F0" stopOpacity="1" />
-                <Stop offset="1" stopColor="#94A3B8" stopOpacity="1" />
-              </LinearGradient>
-              <LinearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#60A5FA" stopOpacity="0.4" />
-                <Stop offset="1" stopColor="#3B82F6" stopOpacity="0.75" />
-              </LinearGradient>
-            </Defs>
+          <Body
+            data={getHighlighterData()}
+            onBodyPartPress={handleBodyPartPress}
+            gender="male"
+            side={isBack ? "back" : "front"}
+            scale={1.15}
+            defaultFill="#E2E8F0"
+          />
+        </View>
 
-            {/* Vertical spine indicator line */}
-            <Line
-              x1="150"
-              y1="12"
-              x2="150"
-               y2="428"
-               stroke="rgba(255,255,255,0.4)"
-               strokeWidth="1"
-               strokeDasharray="4 4"
-            />
-
-            {/* Head and Ears smoothed */}
-            <Ellipse
-              cx="150" cy="54" rx="32" ry="40"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="10"
-            />
-            <Ellipse
-              cx="115" cy="66" rx="6" ry="16"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="6"
-            />
-            <Ellipse
-              cx="185" cy="66" rx="6" ry="16"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="6"
-            />
-
-            {/* Arms smoothed */}
-            <Polygon
-              points="84,148 54,182 42,255 46,340 56,430 76,430 72,340 74,264 86,205 102,160"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="14" strokeLinejoin="round"
-            />
-            <Polygon
-              points="216,148 246,182 258,255 254,340 244,430 224,430 228,340 226,264 214,205 198,160"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="14" strokeLinejoin="round"
-            />
-
-            {/* Main Torso Outline smoothed */}
-            <Polygon
-              points="110,115 82,148 74,205 78,290 90,372 112,430 188,430 210,372 222,290 226,205 218,148 190,115"
-              fill="url(#bodyGradient)" stroke={BODY_STROKE} strokeWidth="14" strokeLinejoin="round"
-            />
-
-            {/* The interactive muscle regions */}
-            {BODY_REGIONS.map((region) => {
-              const hasValue = hasAreaValue(region.id);
-              const painLevel = hasValue ? selectedAreas[region.id] : null;
-              const isIdle = painLevel === null;
-              const fillColor = isIdle ? REGION_IDLE_FILL : getPainColor(painLevel);
-              const isActive = selectedArea === region.id;
-
-              return (
-                <Polygon
-                  key={region.id}
-                  points={region.points}
-                  fill={isActive && isIdle ? "url(#activeGradient)" : fillColor}
-                  opacity={isIdle ? 0.9 : 1}
-                  stroke={isActive ? '#1D4ED8' : REGION_STROKE}
-                  strokeWidth={isActive ? 4 : 2.5}
-                  strokeLinejoin="round"
-                  onPress={() => handleAreaSelect(region.id)}
-                />
-              );
-            })}
-          </Svg>
+        {/* Front / Back Toggle */}
+        <View style={styles.toggleContainer}>
+          <Text style={[styles.toggleLabel, !isBack && styles.toggleLabelActive]}>Front</Text>
+          <Switch
+            value={isBack}
+            onValueChange={(val) => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsBack(val);
+            }}
+            trackColor={{ false: '#3B82F6', true: '#3B82F6' }}
+            thumbColor={'#FFFFFF'}
+          />
+          <Text style={[styles.toggleLabel, isBack && styles.toggleLabelActive]}>Back</Text>
         </View>
 
         <View style={styles.regionLegend}>
           {BODY_REGIONS.map((region) => {
-            const hasValue = hasAreaValue(region.id);
-            const level = hasValue ? selectedAreas[region.id] : null;
-            const badgeColor = level === null ? '#CBD5E1' : getPainColor(level);
+            const effectiveArea = selectedArea || Object.keys(selectedAreas).pop();
+            const isActive = region.id === effectiveArea;
+            const savedLevel = selectedAreas[region.id];
+            
+            let badgeColor = '#CBD5E1'; // Xám mặc định cho các vùng không được chọn
+            let displayLevel = null;
+
+            if (isActive) {
+              if (selectedArea === region.id) {
+                // Khi đang ở trạng thái chỉnh sửa (đang mở popup), body map 
+                // đang hiển thị màu xanh (#93C5FD), nên chấm cũng phải là màu xanh để đồng bộ.
+                badgeColor = '#93C5FD';
+                if (savedLevel !== undefined) {
+                  displayLevel = savedLevel;
+                }
+              } else if (savedLevel !== undefined) {
+                // Khi không mở popup, body map sẽ dùng màu của mức độ đau báo hiệu
+                badgeColor = getPainColor(savedLevel);
+                displayLevel = savedLevel;
+              }
+            }
 
             return (
               <TouchableOpacity
                 key={region.id}
                 style={styles.regionChip}
                 activeOpacity={0.85}
-                onPress={() => handleAreaSelect(region.id)}
+                onPress={() => setSelectedArea(region.id)}
               >
                 <View style={[styles.regionChipDot, { backgroundColor: badgeColor }]} />
                 <Text style={styles.regionChipText}>
                   {region.label}
-                  {level !== null ? ` ${level}/10` : ''}
+                  {displayLevel !== null ? ` ${displayLevel}/10` : ''}
                 </Text>
               </TouchableOpacity>
             );
@@ -264,8 +297,25 @@ const styles = StyleSheet.create({
   },
   mapCanvas: {
     width: '100%',
-    height: MAP_HEIGHT,
-    alignSelf: 'center',
+    height: 400,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 16,
+    gap: 12,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  toggleLabelActive: {
+    color: colors.text,
   },
   regionLegend: {
     flexDirection: 'row',

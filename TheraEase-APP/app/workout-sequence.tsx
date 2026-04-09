@@ -376,7 +376,7 @@ export default function WorkoutSequenceScreen() {
             )}
           </View>
 
-          {showPlaybackControls && (
+          {/* showPlaybackControls && (
             <Pressable
               style={styles.controlsDock}
               onPress={(event) => {
@@ -449,7 +449,7 @@ export default function WorkoutSequenceScreen() {
                 </View>
               </LinearGradient>
             </Pressable>
-          )}
+          ) */}
 
           {videoCompleted && (
             <TouchableOpacity

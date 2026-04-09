@@ -13,6 +13,7 @@ import {
 	Alert,
 	Keyboard,
 	Image,
+	Pressable,
 } from "react-native";
 import { Text, TextInput, ActivityIndicator } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,6 +41,13 @@ interface Message {
 	content: string;
 	created_at: string;
 }
+
+const SUGGESTIONS = [
+	"Tôi đang đau mỏi cổ- vai",
+	"Tôi đau lan tê cả tay",
+	"Tôi cảm thấy đau đầu",
+	"Hướng dẫn tôi sử dụng TheraNECK"
+];
 
 function ChatbotAvatar({
 	size,
@@ -468,16 +476,9 @@ export default function FloatingChatbot() {
 					style={styles.keyboardAvoid}
 					keyboardVerticalOffset={0}
 				>
-					<TouchableOpacity
-						style={styles.modalOverlay}
-						activeOpacity={1}
-						onPress={handleClose}
-					>
-						<TouchableOpacity
-							activeOpacity={1}
-							style={styles.chatContainer}
-							onPress={(e) => e.stopPropagation()}
-						>
+					<View style={styles.modalOverlay}>
+						<Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+						<View style={styles.chatContainer}>
 							{/* Header - Fixed at top */}
 							<LinearGradient
 								colors={["#5B9BD5", "#4A7FB8"]}
@@ -540,6 +541,18 @@ export default function FloatingChatbot() {
 										<View style={styles.emptyContainer}>
 											<Text style={styles.emptyTitle}>Xin chào! 👋</Text>
 											<Text style={styles.emptyText}>{greetingText}</Text>
+											<View style={styles.suggestionsWrapper}>
+												{SUGGESTIONS.map((suggestion, index) => (
+													<TouchableOpacity 
+														key={index}
+														style={styles.suggestionChip}
+														onPress={() => setInputText(suggestion)}
+														activeOpacity={0.7}
+													>
+														<Text style={styles.suggestionText}>{suggestion}</Text>
+													</TouchableOpacity>
+												))}
+											</View>
 										</View>
 									) : (
 										messages.map((msg, idx) => renderMessage(msg, idx))
@@ -584,6 +597,7 @@ export default function FloatingChatbot() {
 											underlineColor="transparent"
 											activeUnderlineColor="transparent"
 											placeholderTextColor="#9CA3AF"
+											textColor={colors.text}
 											cursorColor={colors.primary}
 											selectionColor={colors.primary + "40"}
 										/>
@@ -614,8 +628,8 @@ export default function FloatingChatbot() {
 									</View>
 								</View>
 							</LinearGradient>
-						</TouchableOpacity>
-					</TouchableOpacity>
+						</View>
+					</View>
 				</KeyboardAvoidingView>
 			</Modal>
 		</>
@@ -787,7 +801,7 @@ const styles = StyleSheet.create({
 	messagesContent: {
 		padding: 16,
 		paddingBottom: 100,
-		minHeight: height * 0.9,
+		flexGrow: 1,
 	},
 	emptyContainer: {
 		flex: 1,
@@ -806,6 +820,32 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		lineHeight: 20,
 		paddingHorizontal: 24,
+	},
+	suggestionsWrapper: {
+		marginTop: 24,
+		width: '100%',
+		gap: 10,
+		paddingHorizontal: 16,
+	},
+	suggestionChip: {
+		backgroundColor: '#FFFFFF',
+		paddingVertical: 10,
+		paddingHorizontal: 14,
+		borderRadius: 14,
+		borderWidth: 1,
+		borderColor: '#E5E7EB',
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 1 },
+		shadowOpacity: 0.05,
+		shadowRadius: 2,
+		elevation: 1,
+		alignItems: 'center',
+	},
+	suggestionText: {
+		fontSize: 14,
+		color: '#4B5563',
+		fontWeight: '500',
+		textAlign: 'center',
 	},
 	messageRow: {
 		flexDirection: "row",
@@ -903,6 +943,7 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		paddingHorizontal: 0,
 		minHeight: 40,
+		color: colors.text,
 	},
 	sendButton: {
 		marginLeft: 8,

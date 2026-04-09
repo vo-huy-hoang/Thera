@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { getPainAreaLabel } from '@/utils/constants';
 
+
 export default function PainInputScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -21,14 +22,12 @@ export default function PainInputScreen() {
 
   const handleAreaPress = (area: string, level: number) => {
     setSelectedPainAreas({
-      ...selectedPainAreas,
       [area]: level,
     });
   };
 
   const handleContinue = async () => {
     if (!user || Object.keys(selectedPainAreas).length === 0) return;
-
     // Check if user is authenticated (not guest)
     if (!user.id || user.id === 'guest') {
       alert('Vui lòng đăng nhập để lưu dữ liệu đau');

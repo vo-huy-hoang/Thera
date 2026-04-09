@@ -1,40 +1,125 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions, ImageBackground, TouchableOpacity, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { ArrowLeft } from 'lucide-react-native';
 
+import { api } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { persistOnboardingProfile } from '@/services/onboardingProfile';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+interface Product {
+  id: string;
+  key: string;
+  name: string;
+  purchase_link: string;
+}
+
+const normalizeText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const matchesOfferProduct = (product: Product, requestedKey: string) => {
+  const key = normalizeText(product.key);
+  const name = normalizeText(product.name);
+
+  if (requestedKey === 'rung' || requestedKey.includes('back') || requestedKey.includes('lung')) {
+    return (
+      key === 'rung' ||
+      key.includes('back') ||
+      name.includes('theraback') ||
+      name.includes('back') ||
+      name.includes('lung')
+    );
+  }
+
+  return (
+    key === 'ech' ||
+    key.includes('neck') ||
+    name.includes('theraneck') ||
+    name.includes('neck') ||
+    name.includes('co vai')
+  );
+};
 
 export default function SpecialOfferScreen() {
   const router = useRouter();
+  const { productKey } = useLocalSearchParams<{ productKey?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProductLink, setLoadingProductLink] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        const data = await api.get<Product[]>('/products');
+        if (isMounted) {
+          setProducts(data || []);
+        }
+      } catch (error) {
+        console.warn('Load offer products error:', error);
+      } finally {
+        if (isMounted) {
+          setLoadingProductLink(false);
+        }
+      }
+    };
+
+    void loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const requestedProductKey = useMemo(() => {
+    const rawKey = Array.isArray(productKey) ? productKey[0] : productKey;
+    return normalizeText(rawKey || 'ech');
+  }, [productKey]);
+
+  const offerProduct = useMemo(() => {
+    return products.find((product) => matchesOfferProduct(product, requestedProductKey)) ?? null;
+  }, [products, requestedProductKey]);
 
   const handleNext = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    try {
-      if (!user || user.id === 'guest') {
-        router.replace('/(auth)/login');
-        return;
-      }
+    if (loadingProductLink) {
+      return;
+    }
 
-      if (user) {
+    const purchaseLink = offerProduct?.purchase_link?.trim();
+
+    if (!purchaseLink) {
+      Alert.alert('Chưa có link ưu đãi', 'Sản phẩm này chưa được cấu hình link mua trong admin.');
+      return;
+    }
+
+    if (user && user.id !== 'guest') {
+      try {
         await persistOnboardingProfile();
+      } catch (error) {
+        console.error('Persist onboarding profile error:', error);
       }
+    }
 
+    try {
+      await WebBrowser.openBrowserAsync(purchaseLink);
       router.replace('/(tabs)/home');
     } catch (error) {
-      console.error('Persist onboarding profile error:', error);
-      Alert.alert('Lỗi', 'Không thể lưu hồ sơ lúc này. Vui lòng thử lại.');
+      console.error('Open purchase link error:', error);
+      Alert.alert('Không mở được link', 'Vui lòng kiểm tra lại link sản phẩm trong admin.');
     }
   };
 
@@ -83,11 +168,12 @@ export default function SpecialOfferScreen() {
               </View>
 
               <TouchableOpacity 
-                onPress={handleNext} 
-                style={styles.nextButton}
+                onPress={handleNext}
+                disabled={loadingProductLink}
+                style={[styles.nextButton, loadingProductLink && styles.nextButtonDisabled]}
                 activeOpacity={0.9}
               >
-                 <Text style={styles.nextText}>TIẾP TỤC</Text>
+                 <Text style={styles.nextText}>{loadingProductLink ? 'ĐANG TẢI...' : 'TIẾP TỤC'}</Text>
               </TouchableOpacity>
 
               <View style={styles.links}>
@@ -247,6 +333,9 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     elevation: 5,
+  },
+  nextButtonDisabled: {
+    opacity: 0.75,
   },
   nextText: {
     fontSize: 24,

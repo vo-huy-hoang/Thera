@@ -140,17 +140,6 @@ export async function chatWithAssistant(
 			data.choices?.[0]?.message?.content ||
 			"Xin lỗi, tôi không thể trả lời lúc này.";
 
-		// Save to chat history
-		try {
-			await api.post("/misc/chat-history", { message, role: "user" });
-			await api.post("/misc/chat-history", {
-				message: reply,
-				role: "assistant",
-			});
-		} catch (e) {
-			console.warn("Save chat history failed:", e);
-		}
-
 		return reply;
 	} catch (error) {
 		console.error("Chat error:", error);
@@ -161,7 +150,7 @@ export async function chatWithAssistant(
 // Get chat history
 export async function getChatHistory(limit = 50) {
 	try {
-		return await api.get(`/misc/chat-history?limit=${limit}`);
+		return await api.get(`/chat-history?limit=${limit}`);
 	} catch (error) {
 		console.error("Get chat history error:", error);
 		return [];

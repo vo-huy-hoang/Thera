@@ -85,7 +85,10 @@ export default function ExploreScreen() {
 									<Pressable
 										onPress={() => {
 											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-											router.push("/(auth)/special-offer");
+											router.push({
+												pathname: "/(auth)/special-offer",
+												params: { productKey: "ech" },
+											});
 										}}
 									>
 										<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
@@ -131,7 +134,10 @@ export default function ExploreScreen() {
 									<Pressable
 										onPress={() => {
 											Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-											router.push("/(auth)/special-offer");
+											router.push({
+												pathname: "/(auth)/special-offer",
+												params: { productKey: "rung" },
+											});
 										}}
 									>
 										<Text style={styles.actionPillPrimary}>Nhận ưu đãi</Text>
@@ -242,7 +248,7 @@ const createStyles = (colors: any, isDark: boolean, topInset: number) =>
 		},
 		imageWrap: {
 			height: 240,
-			backgroundColor: isDark ? "#111827" : "#F8FAFC",
+			backgroundColor: "transparent",
 			justifyContent: "center",
 			alignItems: "center",
 			padding: 20,

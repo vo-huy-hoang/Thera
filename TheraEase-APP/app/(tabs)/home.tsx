@@ -784,8 +784,8 @@ export default function HomeScreen() {
           style={styles.tipCard}
         >
           <Text style={styles.tipEmoji}>💡</Text>
-          <Text style={styles.tipTitle}>Mẹo hôm nay</Text>
-          <Text style={styles.tipText}>{dailyTip}</Text>
+          <Text style={[styles.tipTitle, { color: '#78350F' }]}>Mẹo hôm nay</Text>
+          <Text style={[styles.tipText, { color: '#92400E' }]}>{dailyTip}</Text>
         </LinearGradient>
       </Animated.View>
 
@@ -798,8 +798,8 @@ export default function HomeScreen() {
           style={styles.tipCard}
         >
           <Text style={styles.tipEmoji}>🥗</Text>
-          <Text style={styles.tipTitle}>Dinh dưỡng hôm nay</Text>
-          <Text style={styles.tipText}>{dailyNutrition}</Text>
+          <Text style={[styles.tipTitle, { color: '#064E3B' }]}>Dinh dưỡng hôm nay</Text>
+          <Text style={[styles.tipText, { color: '#065F46' }]}>{dailyNutrition}</Text>
         </LinearGradient>
       </Animated.View>
 
