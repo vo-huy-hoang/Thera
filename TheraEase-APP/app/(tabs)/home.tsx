@@ -461,7 +461,7 @@ export default function HomeScreen() {
 
   const handleTryDevice = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const websiteUrl = 'https://theraease.vn';
+    const websiteUrl = 'https://therahome.vn';
     
     // Open website
     import('expo-linking').then(({ openURL }) => {

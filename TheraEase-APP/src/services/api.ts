@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use your deployed backend URL here when deploying
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5001/api';
 
-const TOKEN_KEY = 'theraease_token';
-const USER_KEY = 'theraease_user';
+const TOKEN_KEY = 'therahome_token';
+const USER_KEY = 'therahome_user';
 
 class ApiClient {
   private token: string | null = null;

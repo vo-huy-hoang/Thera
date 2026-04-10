@@ -92,7 +92,7 @@ export default function TermsScreen() {
 					Email: Bacsilong1974@gmail.com{"\n"}
 					Điện thoại: 0364.263.552{"\n"}
 					Địa chỉ: 234 Phạm Văn Đồng, Hà Nội{"\n"}
-					Website: https://theraease.vn
+					Website: https://therahome.vn
 				</Text>
 
 				<Text style={styles.footer}>
