@@ -304,7 +304,7 @@ export default function LoginScreen() {
 						>
 							<Animated.Image
 								entering={FadeInUp.delay(400)}
-								source={require("../../assets/TheraEase_logo_white.png")}
+								source={require("../../assets/TheraHome_logo_white.png")}
 								style={styles.logoImage}
 								resizeMode="contain"
 							/>

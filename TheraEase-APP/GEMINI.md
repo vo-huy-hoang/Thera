@@ -1,4 +1,4 @@
-# GEMINI.md - TheraHOME Mobile App
+# GEMINI.md - TheraHome Mobile App
 
 ## Tech Stack
 - **Framework**: Expo (React Native)

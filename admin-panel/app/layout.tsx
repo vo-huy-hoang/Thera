@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TheraHOME Admin",
+  title: "TheraHome Admin",
   description: "Hệ thống quản lý trị liệu",
 };
 

@@ -146,7 +146,7 @@ export default function ProductReviewsPage() {
       setSaving(true);
       const payload = {
         product_id: form.product_id,
-        author_name: 'TheraHOME',
+        author_name: 'TheraHome',
         rating: Number(form.rating),
         content: form.content.trim(),
         badge: '',

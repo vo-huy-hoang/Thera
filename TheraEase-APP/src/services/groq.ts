@@ -22,7 +22,7 @@ async function getSystemPrompt(promptType: string): Promise<{
 
 	// Default fallback
 	return {
-		system_prompt: "Bạn là trợ lý sức khỏe AI của TheraHOME.",
+		system_prompt: "Bạn là trợ lý sức khỏe AI của TheraHome.",
 		model: "llama-3.3-70b-versatile",
 		temperature: 0.7,
 		max_tokens: 1000,

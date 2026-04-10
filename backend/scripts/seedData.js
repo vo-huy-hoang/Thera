@@ -26,7 +26,7 @@ async function seedData() {
   if (!adminExists) {
     await User.create({
       email: process.env.ADMIN_EMAIL || 'admin@theraease.vn',
-      full_name: 'Admin TheraHOME',
+      full_name: 'Admin TheraHome',
       role: 'admin',
       password: process.env.ADMIN_PASSWORD || 'admin123',
     });
@@ -49,7 +49,7 @@ async function seedData() {
       },
       {
         prompt_type: 'chatbot',
-        system_prompt: 'Bạn là trợ lý sức khỏe AI của TheraHOME, chuyên về giảm đau cổ, vai, lưng. Hãy trả lời câu hỏi một cách chuyên nghiệp nhưng dễ hiểu. Luôn trả lời bằng tiếng Việt. Khuyến khích người dùng tập trị liệu đều đặn.',
+        system_prompt: 'Bạn là trợ lý sức khỏe AI của TheraHome, chuyên về giảm đau cổ, vai, lưng. Hãy trả lời câu hỏi một cách chuyên nghiệp nhưng dễ hiểu. Luôn trả lời bằng tiếng Việt. Khuyến khích người dùng tập trị liệu đều đặn.',
         temperature: 0.7,
         max_tokens: 800,
         model: 'llama-3.3-70b-versatile',

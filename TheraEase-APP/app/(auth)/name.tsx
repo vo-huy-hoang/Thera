@@ -62,7 +62,7 @@ export default function NameScreen() {
 
 							<Text style={styles.title}>Chúng tôi gọi bạn là gì?</Text>
 							<Text style={styles.subtitle}>
-								Hãy cho chúng tôi biết tên của bạn để TheraHOME có thể cá nhân
+								Hãy cho chúng tôi biết tên của bạn để TheraHome có thể cá nhân
 								hóa trải nghiệm của bạn.
 							</Text>
 						</MotiView>

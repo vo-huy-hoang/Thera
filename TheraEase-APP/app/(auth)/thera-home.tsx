@@ -16,7 +16,7 @@ const LABELS: any[] = [
   { text: 'Ngay tại nhà', top: '45%', right: '8%' },
 ];
 
-export default function TheraHOMEScreen() {
+export default function TheraHomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user, setUser } = useAuthStore();

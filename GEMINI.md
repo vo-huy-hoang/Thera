@@ -1,9 +1,9 @@
-# GEMINI.md - TheraHOME Project Guidelines
+# GEMINI.md - TheraHome Project Guidelines
 
-This file provides context and instructions for AI coding assistants working on the TheraHOME project.
+This file provides context and instructions for AI coding assistants working on the TheraHome project.
 
 ## Project Overview
-TheraHOME is a comprehensive healthcare platform consisting of a mobile application, an admin dashboard, and a robust backend.
+TheraHome is a comprehensive healthcare platform consisting of a mobile application, an admin dashboard, and a robust backend.
 
 ### Project Structure
 - **/TheraEase-APP**: Mobile application built with Expo (React Native). (folder name kept as TheraEase-APP)
@@ -12,7 +12,7 @@ TheraHOME is a comprehensive healthcare platform consisting of a mobile applicat
 
 ---
 
-## 📱 TheraHOME-APP (Mobile)
+## 📱 TheraHome-APP (Mobile)
 - **Framework**: Expo (React Native)
 - **State Management**: Zustand
 - **Backend-as-a-Service**: Supabase

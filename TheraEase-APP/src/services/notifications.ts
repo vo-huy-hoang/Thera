@@ -56,7 +56,7 @@ export async function scheduleDailyReminder(hour = 8, minute = 0) {
 		// Schedule new daily reminder
 		await Notifications.scheduleNotificationAsync({
 			content: {
-				title: "TheraHOME 🧘‍♀️",
+				title: "TheraHome 🧘‍♀️",
 				body: "Đã đến giờ tập phục hồi! Hãy bắt đầu ngay nào.",
 				sound: true,
 			},

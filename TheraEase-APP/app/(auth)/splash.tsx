@@ -36,7 +36,7 @@ export default function SplashScreen() {
             <Animated.View entering={FadeInUp.duration(1000)} style={styles.logoContainer}>
               <View style={styles.logoImageContainer}>
                 <Image 
-                  source={require('../../assets/TheraEase_logo_black.png')} 
+                  source={require('../../assets/TheraHome_logo_black.png')} 
                   style={styles.logoImage} 
                   resizeMode="contain" 
                  />

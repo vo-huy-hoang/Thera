@@ -39,8 +39,8 @@ export const darkTheme = {
 export const theme = lightTheme; // Default
 
 export const lightColors = {
-  // TheraHOME Brand Colors (from website)
-  primary: '#5B9BD5', // TheraHOME Blue
+  // TheraHome Brand Colors (from website)
+  primary: '#5B9BD5', // TheraHome Blue
   primaryDark: '#4A7FB8', // Darker Blue
   primaryLight: '#7DB3E0', // Lighter Blue
   

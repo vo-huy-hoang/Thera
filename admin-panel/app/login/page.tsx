@@ -45,7 +45,7 @@ export default function LoginPage() {
               <Activity size={28} strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">TheraHOME</h1>
+              <h1 className="text-2xl font-bold">TheraHome</h1>
               <p className="text-blue-100 text-sm">Admin Panel</p>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function LoginPage() {
                 <Activity size={24} className="text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">TheraHOME</h1>
+                <h1 className="text-xl font-bold text-slate-900">TheraHome</h1>
                 <p className="text-slate-600 text-xs">Admin Panel</p>
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function LoginPage() {
             </form>
 
             <p className="text-center text-xs text-slate-500 mt-8">
-              © 2025 TheraHOME
+              © 2025 TheraHome
             </p>
           </div>
         </div>
