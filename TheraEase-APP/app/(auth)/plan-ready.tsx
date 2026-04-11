@@ -104,29 +104,42 @@ export default function PlanReadyScreen() {
                 <Text style={styles.planTitle}>Lộ trình 14 ngày</Text>
              </View>
 
-             <View style={styles.planIllustrationRow}>
-                <View style={styles.planIllustrationCard}>
-                   <Image
-                     source={require('../../assets/Lấy lộ trình.png')}
-                     style={styles.planIllustrationImage}
-                     resizeMode="contain"
-                   />
+             <View style={styles.topSection}>
+                <View style={styles.topLeftGrid}>
+                   {PLAN_DAYS.slice(0, 4).map((day, index) => (
+                      <Animated.View 
+                        key={day.id} 
+                        entering={ZoomIn.delay(100 * index).duration(400)}
+                        style={[styles.gridItem, { width: '47%' }]}
+                      >
+                         <Text style={[styles.dayNumber, day.isRest && styles.restNumber]}>{day.id}</Text>
+                      </Animated.View>
+                   ))}
+                </View>
+
+                <View style={styles.topRightImage}>
+                   <View style={styles.planIllustrationCard}>
+                      <Image
+                        source={require('../../assets/Lấy lộ trình.png')}
+                        style={styles.planIllustrationImage}
+                        resizeMode="contain"
+                      />
+                   </View>
                 </View>
              </View>
              
-             <View style={styles.grid}>
-                {PLAN_DAYS.map((day, index) => (
+             <View style={styles.bottomGrid}>
+                {PLAN_DAYS.slice(4).map((day, index) => (
                    <Animated.View 
                      key={day.id} 
-                     entering={ZoomIn.delay(100 * index).duration(400)}
+                     entering={ZoomIn.delay(100 * (index + 4)).duration(400)}
                      style={styles.gridItem}
                    >
-                      <Text style={styles.dayNumber}>{day.id}</Text>
-                      <Text style={[styles.dayTitle, day.isRest && styles.restText]} numberOfLines={2}>
-                        {day.title}
-                      </Text>
+                      <Text style={[styles.dayNumber, day.isRest && styles.restNumber]}>{day.id}</Text>
                    </Animated.View>
                 ))}
+                <View style={{ width: '23%' }} />
+                <View style={{ width: '23%' }} />
              </View>
 
              <TouchableOpacity 
@@ -229,17 +242,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  grid: {
+  topSection: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 15,
-    paddingTop: 8,
-    justifyContent: 'space-between',
-  },
-  planIllustrationRow: {
     paddingHorizontal: 15,
     paddingTop: 14,
+    justifyContent: 'space-between',
+  },
+  topLeftGrid: {
+    width: '49%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignContent: 'flex-start',
+  },
+  topRightImage: {
+    width: '49%',
     alignItems: 'flex-end',
+  },
+  bottomGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 15,
+    justifyContent: 'space-between',
   },
   planIllustrationCard: {
     width: width * 0.36,
@@ -268,18 +292,12 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   dayNumber: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#10B981',
   },
-  dayTitle: {
-    fontSize: 10,
-    lineHeight: 12,
-    textAlign: 'center',
-    color: '#666',
-  },
-  restText: {
-    color: '#999',
+  restNumber: {
+    color: '#9CA3AF',
   },
   ctaButton: {
     backgroundColor: '#3B82F6',
